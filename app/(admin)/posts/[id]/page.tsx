@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin";
 import { profilesByIds, signedUrls } from "@/lib/data";
 import { deleteMedia, purgeMedia, restoreMedia } from "@/lib/media-actions";
 import { serviceClient } from "@/lib/supabase/service";
-import { duration, n, tokenCount, when } from "@/lib/format";
+import { duration, n, sourceLabel, tokenCount, when } from "@/lib/format";
 import { MediaForm } from "@/components/MediaForm";
 import { ConfirmButton } from "@/components/ConfirmButton";
 import { PersonLink } from "@/components/Person";
@@ -46,12 +46,12 @@ export default async function MediaDetail({ params, searchParams }: { params: Pr
   const ha = voteRows.filter((v) => v.value === 1).length;
   return (
     <div className="stack">
-      <Link href="/media" className="muted">← All media</Link>
+      <Link href="/posts" className="muted">← All posts</Link>
       <header className="page-head" style={{ marginBottom: 0 }}>
         <div>
           <span className="eyebrow">Post {post.id.slice(0, 8)}</span>
           <h1 style={{ maxWidth: "36ch" }}>{post.content}</h1>
-          <p>{post.deleted_at ? <span className="badge badge-bad">Deleted {when(post.deleted_at)}</span> : <span className="badge badge-good">Live</span>} · {post.style} · source {post.source} · posted {when(post.created_at)}</p>
+          <p>{post.deleted_at ? <span className="badge badge-bad">Deleted {when(post.deleted_at)}</span> : <span className="badge badge-good">Live</span>} · {post.style} · {sourceLabel(post.source)} · posted {when(post.created_at)}</p>
         </div>
       </header>
       {notice && <div className={`notice notice-${NOTICES[notice][0]}`} role="status">{NOTICES[notice][1]}</div>}
@@ -96,8 +96,8 @@ export default async function MediaDetail({ params, searchParams }: { params: Pr
       </section>
 
       <section className="card">
-        <h2>Gemini generation records</h2>
-        <p className="sub">humor_generations for this image — the exact prompts, model and candidates.</p>
+        <h2>AI generation records</h2>
+        <p className="sub">Every AI run for this photo (regenerations included) — open one for the full prompt, config and usage. <Link href="/ai">All models &amp; prompts →</Link></p>
         {(generations.data as Generation[] | null)?.length ? (
           <div className="stack">
             {(generations.data as Generation[]).map((g) => (
@@ -120,7 +120,7 @@ export default async function MediaDetail({ params, searchParams }: { params: Pr
               </details>
             ))}
           </div>
-        ) : <p className="empty">No generation records (handmade, seeded or admin-created media).</p>}
+        ) : <p className="empty">No AI generation records — this caption was member-written, seeded or created here.</p>}
       </section>
 
       <section className="grid grid-2">

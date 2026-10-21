@@ -4,7 +4,8 @@ import { usePathname } from "next/navigation";
 const LINKS = [
   { href: "/", label: "Laugh Lab", icon: "☺" },
   { href: "/users", label: "Users", icon: "◉" },
-  { href: "/media", label: "AI media", icon: "▣" },
+  { href: "/posts", label: "Posts", icon: "▣" },
+  { href: "/ai", label: "AI models & prompts", icon: "✦" },
   { href: "/votes", label: "Votes & ratings", icon: "♥" },
   { href: "/requests", label: "Access requests", icon: "✉" },
 ];

@@ -2,6 +2,7 @@ import "server-only";
 import { serviceClient, type ServiceClient } from "./supabase/service";
 import { storageBucket } from "./supabase/schema";
 import { computeStats, type CaptionRow, type ProfileRow } from "./stats";
+import { computeAiStats, type AiCaptionRow, type GenerationRow, type ModerationRow } from "./ai-stats";
 
 export const PAGE_SIZE = 25;
 const PROFILE_COLUMNS = "id,username,first_name,last_name,display_name,avatar_path,created_at,onboarded_at,is_official,is_superadmin";
@@ -110,5 +111,24 @@ export async function postRatings(db: ServiceClient, sort: string) {
   const key = sort in sorts ? sort : "ha";
   rows.sort((a, b) => sorts[key](a, b) || b.created_at.localeCompare(a.created_at));
   return { rows, key };
+}
+export const GENERATION_COLUMNS = "id,image_id,user_id,provider,model,prompt_version,status,failure_stage,usage_metadata,caption_candidates,joke_style,created_at,completed_at";
+export async function aiOverview() {
+  const db = serviceClient();
+  const [generations, captions, votes, moderation] = await Promise.all([
+    fetchAll<GenerationRow>(db, "humor_generations", GENERATION_COLUMNS),
+    fetchAll<AiCaptionRow>(db, "humor_captions", "id,image_id,content,source,deleted_at"),
+    fetchAll<{ caption_id: string; value: number }>(db, "humor_votes", "caption_id,value"),
+    // Optional table (moderation was added later); absent → no rows.
+    fetchAll<ModerationRow>(db, "humor_moderation_checks", "model,allowed").catch(() => []),
+  ]);
+  const stats = computeAiStats({ generations, captions, votes, moderation });
+  // The exact prompt text of the newest run for each prompt version.
+  const prompts = await Promise.all(stats.versions.map(async (v) => {
+    const { data } = await db.from("humor_generations").select("id,system_prompt,user_prompt,generation_config,model,created_at")
+      .eq("prompt_version", v.version).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    return [v.version, data as { id: string; system_prompt: string; user_prompt: string; generation_config: unknown; model: string; created_at: string } | null] as const;
+  }));
+  return { ...stats, prompts: new Map(prompts) };
 }
 export { PROFILE_COLUMNS };

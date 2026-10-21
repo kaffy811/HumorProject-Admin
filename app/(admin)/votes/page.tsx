@@ -56,7 +56,7 @@ async function Ratings({ page, sort }: { page: number; sort: string }) {
             {slice.map((r, i) => (
               <tr key={r.id}>
                 <td className="muted num">{(page - 1) * PAGE_SIZE + i + 1}</td>
-                <td><Link className="clip" href={`/media/${r.id}`} style={{ fontWeight: 600 }}>{r.content}</Link><span className="muted" style={{ fontSize: 12 }}>{r.style}</span></td>
+                <td><Link className="clip" href={`/posts/${r.id}`} style={{ fontWeight: 600 }}>{r.content}</Link><span className="muted" style={{ fontSize: 12 }}>{r.style}</span></td>
                 <td><PersonLink profile={people.get(r.author) ?? null} id={r.author} /></td>
                 <td className="r num">{n(r.up)}</td>
                 <td className="r num">{n(r.down)}</td>
@@ -101,7 +101,7 @@ async function HaVotes({ page, value }: { page: number; value: string }) {
               <tr key={r.id}>
                 <td><PersonLink profile={people.get(r.user_id) ?? null} id={r.user_id} /></td>
                 <td>{r.value === 1 ? <span className="badge badge-good">Ha +1</span> : <span className="badge badge-bad">−1</span>}</td>
-                <td><Link className="clip" href={`/media/${r.caption_id}`}>{r.humor_captions?.content ?? r.caption_id}</Link></td>
+                <td><Link className="clip" href={`/posts/${r.caption_id}`}>{r.humor_captions?.content ?? r.caption_id}</Link></td>
                 <td className="muted">{when(r.created_at)}</td>
               </tr>
             ))}
@@ -131,7 +131,7 @@ async function Hearts({ page }: { page: number }) {
             {rows.map((r) => (
               <tr key={`${r.comment_id}-${r.user_id}`}>
                 <td><PersonLink profile={people.get(r.user_id) ?? null} id={r.user_id} /></td>
-                <td>{r.humor_comments ? <Link className="clip" href={`/media/${r.humor_comments.caption_id}`}>{r.humor_comments.content}</Link> : "—"}</td>
+                <td>{r.humor_comments ? <Link className="clip" href={`/posts/${r.humor_comments.caption_id}`}>{r.humor_comments.content}</Link> : "—"}</td>
                 <td>{r.humor_comments ? <PersonLink profile={people.get(r.humor_comments.user_id) ?? null} id={r.humor_comments.user_id} /> : "—"}</td>
                 <td className="muted">{when(r.created_at)}</td>
               </tr>

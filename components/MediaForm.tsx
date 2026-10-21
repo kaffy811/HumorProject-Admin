@@ -1,13 +1,14 @@
 "use client";
 import { useActionState, useState } from "react";
 import { createMedia, updateMedia, type ActionState } from "@/lib/media-actions";
-import { SOURCES, STYLES } from "@/lib/format";
+import { SOURCE_LABELS, SOURCES, STYLES } from "@/lib/format";
 
 type Initial = { id: string; content: string; style: string; source: string; description: string | null };
 export function MediaForm({ initial, hasOfficial }: { initial?: Initial; hasOfficial?: boolean }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(initial ? updateMedia : createMedia, null);
   const [preview, setPreview] = useState<string | null>(null);
   const [length, setLength] = useState(initial?.content.length ?? 0);
+  const [source, setSource] = useState(initial?.source ?? "handmade");
   return (
     <form action={action} className="form">
       {initial && <input type="hidden" name="id" value={initial.id} />}
@@ -38,9 +39,10 @@ export function MediaForm({ initial, hasOfficial }: { initial?: Initial; hasOffi
         </div>
         <div className="field">
           <label htmlFor="source">Source</label>
-          <select id="source" name="source" className="select" defaultValue={initial?.source ?? "ai"}>
-            {SOURCES.map((source) => <option key={source}>{source}</option>)}
+          <select id="source" name="source" className="select" defaultValue={initial?.source ?? "handmade"} onChange={(e) => setSource(e.target.value)}>
+            {SOURCES.map((source) => <option key={source} value={source}>{SOURCE_LABELS[source].label}</option>)}
           </select>
+          <span className="hint">{SOURCE_LABELS[source]?.hint}</span>
         </div>
         {!initial && (
           <div className="field">
@@ -55,7 +57,7 @@ export function MediaForm({ initial, hasOfficial }: { initial?: Initial; hasOffi
       <div className="field">
         <label htmlFor="description">Scene description <span className="muted">(optional)</span></label>
         <textarea id="description" name="description" className="textarea" maxLength={2000} defaultValue={initial?.description ?? ""} />
-        <span className="hint">The AI-written scene summary stored on humor_images.description.</span>
+        <span className="hint">Scene summary stored on humor_images.description (written by AI for AI-captioned posts).</span>
       </div>
       {state?.error && <div className="notice notice-bad" role="alert">{state.error}</div>}
       {state?.ok && <div className="notice notice-good" role="status">{state.ok}</div>}

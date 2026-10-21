@@ -76,40 +76,45 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-// Two series on one shared count axis (same unit: events per day).
-export function Trend({ days }: { days: { date: string; ha: number; posts: number; comments: number }[] }) {
+type Series<T> = { key: string; color: string; pick: (d: T) => number };
+// Daily lines on one shared count axis (same unit: events per day).
+export function Lines<T extends { date: string }>({ days, series, label, describe }: { days: T[]; series: Series<T>[]; label: string; describe: (d: T) => string }) {
   const width = 640, height = 180, padX = 28, padY = 14;
-  const max = Math.max(1, ...days.flatMap((d) => [d.ha, d.posts + d.comments]));
+  const max = Math.max(1, ...days.flatMap((d) => series.map((s) => s.pick(d))));
   const x = (index: number) => padX + (index / Math.max(1, days.length - 1)) * (width - padX * 2);
   const y = (value: number) => height - padY - (value / max) * (height - padY * 2);
-  const line = (pick: (d: (typeof days)[number]) => number) => days.map((d, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(pick(d)).toFixed(1)}`).join(" ");
-  const series = [
-    { key: "Ha votes", color: "var(--series-1)", pick: (d: (typeof days)[number]) => d.ha },
-    { key: "Posts + comments", color: "var(--series-2)", pick: (d: (typeof days)[number]) => d.posts + d.comments },
-  ];
   const short = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
   return (
     <div className="trend">
       <div className="legend">
         {series.map((s) => <span key={s.key}><i style={{ background: s.color }} />{s.key}</span>)}
       </div>
-      <svg viewBox={`0 0 ${width} ${height + 18}`} role="img" aria-label="Daily activity over the last 30 days">
+      <svg viewBox={`0 0 ${width} ${height + 18}`} role="img" aria-label={label}>
         {[0, 0.5, 1].map((t) => (
           <g key={t}>
             <line className="axis" x1={padX} x2={width - padX} y1={y(max * t)} y2={y(max * t)} strokeDasharray={t ? "3 4" : undefined} />
             <text className="label" x={padX - 6} y={y(max * t) + 3} textAnchor="end">{Math.round(max * t)}</text>
           </g>
         ))}
-        {series.map((s) => <path key={s.key} d={line(s.pick)} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />)}
+        {series.map((s) => <path key={s.key} d={days.map((d, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(s.pick(d)).toFixed(1)}`).join(" ")} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />)}
         {days.map((d, i) => (
           <g key={d.date}>
             <rect x={x(i) - (width - padX * 2) / days.length / 2} y={padY} width={(width - padX * 2) / days.length} height={height - padY * 2} fill="transparent">
-              <title>{`${short(d.date)} — ${d.ha} Ha · ${d.posts} posts · ${d.comments} comments`}</title>
+              <title>{`${short(d.date)} — ${describe(d)}`}</title>
             </rect>
             {(i % 7 === 0 || (i === days.length - 1 && i % 7 >= 3)) && <text className="label" x={x(i)} y={height + 10} textAnchor="middle">{short(d.date)}</text>}
           </g>
         ))}
       </svg>
     </div>
+  );
+}
+
+type Day = { date: string; ha: number; posts: number; comments: number };
+export function Trend({ days }: { days: Day[] }) {
+  return (
+    <Lines days={days} label="Daily activity over the last 30 days"
+      series={[{ key: "Ha votes", color: "var(--series-1)", pick: (d) => d.ha }, { key: "Posts + comments", color: "var(--series-2)", pick: (d) => d.posts + d.comments }]}
+      describe={(d) => `${d.ha} Ha · ${d.posts} posts · ${d.comments} comments`} />
   );
 }

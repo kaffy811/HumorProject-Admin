@@ -1,5 +1,12 @@
 export const STYLES = ["Deadpan", "Roast", "Pun", "Dad joke", "Absurd", "Wholesome", "HANDMADE"] as const;
 export const SOURCES = ["ai", "handmade", "seed"] as const;
+// humor_captions.source: who wrote the caption.
+export const SOURCE_LABELS: Record<string, { label: string; hint: string }> = {
+  ai: { label: "AI caption", hint: "A member picked (and maybe edited) one of the AI-generated captions" },
+  handmade: { label: "Member-written", hint: "The member wrote the caption themselves, no AI" },
+  seed: { label: "Official seed", hint: "Starter posts imported by the seed script under the Little Mao account" },
+};
+export const sourceLabel = (source: string) => SOURCE_LABELS[source]?.label ?? source;
 export const TIME_ZONE = "America/New_York";
 
 export function n(value: number) {

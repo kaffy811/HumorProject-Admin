@@ -97,3 +97,39 @@ assert.equal(stats.days.length, 30);
 assert.equal(stats.days.reduce((s, d) => s + d.ha, 0), 2);
 assert.equal(stats.lengths[0].average, 2);
 console.log("PASS admin gate, safe redirects, media validation and dashboard statistics.");
+
+// AI analytics: per-model usage, publication, candidate picks and edits.
+import { candidatesOf, computeAiStats, usageOf } from "../lib/ai-stats";
+assert.deepEqual(usageOf({ attempts: [{ promptTokenCount: 10, candidatesTokenCount: 5, thoughtsTokenCount: 2, totalTokenCount: 17 }, { promptTokenCount: 1, totalTokenCount: 1 }] }), { prompt: 11, output: 5, thoughts: 2, total: 18 });
+assert.deepEqual(usageOf({ input_tokens: 4, output_tokens: 6 }), { prompt: 4, output: 6, thoughts: 0, total: 10 });
+assert.equal(candidatesOf([{ text: "b", originalText: "a", style: "Pun" }])[0].original, "a");
+const cand = (texts: string[]) => texts.map((t) => ({ text: t, originalText: t, style: "Pun" }));
+const gen = (id: string, image: string, extra = {}) => ({ id, image_id: image, user_id: "u", provider: "google", model: "gemini-x", prompt_version: "v1", status: "completed", failure_stage: null, usage_metadata: { attempts: [{ totalTokenCount: 100 }] }, caption_candidates: cand(["one", "two", "three", "four"]), joke_style: null, created_at: "2026-10-19T12:00:00Z", completed_at: "2026-10-19T12:00:05Z", ...extra });
+const ai = computeAiStats({
+  now,
+  generations: [
+    gen("g1", "p1", { created_at: "2026-10-19T11:00:00Z" }),
+    gen("g2", "p1", { caption_candidates: cand(["a", "b", "c", "d"]) }),
+    gen("g3", "p2"),
+    gen("g4", "p3", { status: "failed", failure_stage: "provider", completed_at: null, usage_metadata: null, model: "claude-x", provider: "anthropic", prompt_version: "v2" }),
+  ],
+  captions: [
+    { id: "x1", image_id: "p1", content: "c", source: "ai", deleted_at: null },
+    { id: "x2", image_id: "p2", content: "my own rewrite", source: "ai", deleted_at: null },
+  ],
+  votes: [{ caption_id: "x1", value: 1 }, { caption_id: "x1", value: 1 }],
+  moderation: [{ model: "gemini-x", allowed: true }, { model: "gemini-x", allowed: false }],
+});
+assert.equal(ai.totals.runs, 4);
+assert.equal(ai.totals.published, 2, "only the latest completed run per photo counts as published");
+assert.equal(ai.totals.providers, 2);
+assert.deepEqual(ai.picks, [0, 0, 1, 0], "x1 matched candidate #3 of g2");
+assert.equal(ai.edited, 1);
+assert.equal(ai.regenerations, 1.5);
+const gemini = ai.models.find((m) => m.model === "gemini-x")!;
+assert.equal(gemini.runs, 3); assert.equal(gemini.usage.total, 300); assert.equal(gemini.medianLatency, 5000); assert.equal(gemini.haPerPost, 1);
+assert.equal(ai.models.find((m) => m.provider === "anthropic")!.failed, 1);
+assert.equal(ai.versions.length, 2);
+assert.equal(ai.failures[0].label, "provider");
+assert.equal(ai.moderation.length, 2);
+console.log("PASS AI analytics: usage parsing, per-model and per-prompt stats, candidate picks and edits.");

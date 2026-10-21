@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
 import { dashboardStats } from "@/lib/data";
-import { duration, handle, n, pct } from "@/lib/format";
+import { duration, handle, n, pct, sourceLabel } from "@/lib/format";
 import { Bars, Funnel, Heatmap, Trend } from "@/components/charts";
 import { PersonLink } from "@/components/Person";
 import { pendingRequestCount } from "@/lib/requests";
@@ -23,7 +23,7 @@ export default async function Dashboard() {
           <h1>What&apos;s actually funny.</h1>
           <p>Live numbers from the shared Humor Project database. Times are New York time; deleted posts are excluded from laugh stats.</p>
         </div>
-        <Link className="btn btn-primary" href="/media/new">+ New media</Link>
+        <Link className="btn btn-primary" href="/posts/new">+ New post</Link>
       </header>
 
       {!!pending && (
@@ -111,7 +111,7 @@ export default async function Dashboard() {
           {s.hall.length ? (
             <div className="hall">
               {s.hall.map((post, index) => (
-                <Link className="hall-item" key={post.id} href={`/media/${post.id}`}>
+                <Link className="hall-item" key={post.id} href={`/posts/${post.id}`}>
                   <span className="rank">{index + 1}</span>
                   {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
                   {post.imagePath && s.thumbs[post.imagePath] ? <img className="thumb" src={s.thumbs[post.imagePath]} alt="" /> : <span className="thumb" />}
@@ -153,7 +153,7 @@ export default async function Dashboard() {
           )}
           {s.sources.length > 0 && (
             <p className="muted" style={{ margin: "14px 0 0", fontSize: 12.5 }}>
-              Live posts by source: {s.sources.map((x) => `${x.source} ${n(x.count)}`).join(" · ")}
+              Live posts by source: {s.sources.map((x) => `${sourceLabel(x.source)} ${n(x.count)}`).join(" · ")} · <Link href="/ai">AI details →</Link>
             </p>
           )}
         </div>

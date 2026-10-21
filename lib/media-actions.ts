@@ -13,8 +13,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function refresh(id?: string) {
   revalidatePath("/");
-  revalidatePath("/media");
-  if (id) revalidatePath(`/media/${id}`);
+  revalidatePath("/posts");
+  if (id) revalidatePath(`/posts/${id}`);
 }
 
 export async function createMedia(_: ActionState, form: FormData): Promise<ActionState> {
@@ -74,7 +74,7 @@ export async function createMedia(_: ActionState, form: FormData): Promise<Actio
     .select("id").single();
   if (error || !caption) { await cleanup(); return { error: `Could not publish the caption: ${error?.message}` }; }
   refresh();
-  redirect(`/media/${caption.id}?created=1`);
+  redirect(`/posts/${caption.id}?created=1`);
 }
 
 export async function updateMedia(_: ActionState, form: FormData): Promise<ActionState> {
@@ -104,7 +104,7 @@ export async function deleteMedia(form: FormData) {
   const { error } = await serviceClient().from("humor_captions").update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null);
   if (error) throw new Error(error.message);
   refresh(id);
-  redirect(`/media/${id}?deleted=1`);
+  redirect(`/posts/${id}?deleted=1`);
 }
 
 export async function restoreMedia(form: FormData) {
@@ -114,7 +114,7 @@ export async function restoreMedia(form: FormData) {
   const { error } = await serviceClient().from("humor_captions").update({ deleted_at: null }).eq("id", id);
   if (error) throw new Error(error.message);
   refresh(id);
-  redirect(`/media/${id}?restored=1`);
+  redirect(`/posts/${id}?restored=1`);
 }
 
 // Permanent removal of an already-deleted post: rows cascade from the image,
@@ -122,13 +122,13 @@ export async function restoreMedia(form: FormData) {
 export async function purgeMedia(form: FormData) {
   await requireAdmin();
   const id = String(form.get("id") ?? "");
-  if (!UUID.test(id) || form.get("confirm") !== "PURGE") redirect(`/media/${id}?purge=confirm`);
+  if (!UUID.test(id) || form.get("confirm") !== "PURGE") redirect(`/posts/${id}?purge=confirm`);
   const db = serviceClient();
   const { data: caption } = await db.from("humor_captions").select("image_id,deleted_at,og_path").eq("id", id).maybeSingle();
-  if (!caption) redirect("/media");
-  if (!caption.deleted_at) redirect(`/media/${id}?purge=live`);
+  if (!caption) redirect("/posts");
+  if (!caption.deleted_at) redirect(`/posts/${id}?purge=live`);
   const { count: live } = await db.from("humor_captions").select("id", { count: "exact", head: true }).eq("image_id", caption.image_id).is("deleted_at", null);
-  if (live) redirect(`/media/${id}?purge=shared`);
+  if (live) redirect(`/posts/${id}?purge=shared`);
   const [{ data: image }, { data: drafts }, { data: generations }, { data: siblings }] = await Promise.all([
     db.from("humor_images").select("storage_path,locked_thumbnail_path").eq("id", caption.image_id).maybeSingle(),
     db.from("humor_drafts").select("image_path,ai_path").eq("image_id", caption.image_id),
@@ -145,5 +145,5 @@ export async function purgeMedia(form: FormData) {
     clean(previews).length ? db.storage.from(storageBucket("humor-previews")).remove(clean(previews)) : null,
   ]);
   refresh();
-  redirect("/media?purged=1");
+  redirect("/posts?purged=1");
 }

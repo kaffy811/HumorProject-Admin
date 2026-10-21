@@ -104,7 +104,7 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
                 <tr key={post.id}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
                   <td>{post.image.storage_path && urls[post.image.storage_path] ? <img className="thumb" src={urls[post.image.storage_path]} alt="" /> : <span className="thumb" />}</td>
-                  <td><Link href={`/media/${post.id}`} className="clip">{post.content}</Link></td>
+                  <td><Link href={`/posts/${post.id}`} className="clip">{post.content}</Link></td>
                   <td>{post.style}</td>
                   <td className="r num">{n(haCounts.get(post.id) ?? 0)}</td>
                   <td>{post.deleted_at ? <span className="badge badge-bad">Deleted</span> : <span className="badge badge-good">Live</span>}</td>
