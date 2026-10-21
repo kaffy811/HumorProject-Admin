@@ -69,24 +69,41 @@ export default async function Ai() {
         </div>
         <div className="card">
           <h2>Which style do members pick?</h2>
-          <p className="sub">Each run offers four captions in four different styles. Pick rate = chosen ÷ offered, for posts published without rewriting.</p>
+          <p className="sub">Each run asks the model for four captions in four different styles (it chooses which four of six). Pick rate = times chosen ÷ times offered, so styles the model offers more often are not favoured.</p>
           {s.styleWins.length ? (
-            <Bars rows={s.styleWins.map((w) => ({ label: w.style, value: w.rate * 100, tip: `${w.style}: picked ${w.picked} of ${w.offered} times offered` }))} format={(v) => `${Math.round(v)}%`} />
-          ) : <p className="empty">No published AI posts yet.</p>}
-          <p className="muted" style={{ margin: "12px 0 0", fontSize: 12.5 }}>{n(s.matched)} published as generated · {n(s.edited)} rewritten first.</p>
+            <div className="table-wrap" style={{ boxShadow: "none" }}>
+              <table>
+                <thead><tr><th>Style</th><th className="r">Offered</th><th className="r">Picked</th><th style={{ width: "45%" }}>Pick rate</th></tr></thead>
+                <tbody>
+                  {s.styleWins.map((w) => (
+                    <tr key={w.style} style={w.offered < 5 ? { opacity: 0.6 } : undefined}>
+                      <td><b>{w.style}</b></td>
+                      <td className="r num">{n(w.offered)}</td>
+                      <td className="r num">{n(w.picked)}</td>
+                      <td>
+                        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span className="bar-fill" style={{ display: "block", height: 14, width: `${Math.max(1, w.rate * 80)}%` }} />
+                          <span className="bar-value">{Math.round(w.rate * 100)}%</span>
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p className="empty">No four-style runs have been published yet.</p>}
+          <p className="muted" style={{ margin: "12px 0 0", fontSize: 12.5 }}>
+            Based on {n(s.matched - s.singleStyle)} posts published exactly as generated. Faded rows were offered fewer than 5 times — too few to trust.
+            {" "}Not counted: {n(s.edited)} rewritten before publishing{s.singleStyle ? `, ${n(s.singleStyle)} from older runs where all four captions shared one style` : ""}.
+          </p>
         </div>
       </section>
 
-      <section className="grid grid-3">
+      <section className="grid grid-2">
         <div className="card">
           <h2>Where runs fail</h2>
           <p className="sub">failure_stage of failed runs.</p>
           {s.failures.length ? <Bars rows={s.failures} /> : <p className="empty">No failures. 🎉</p>}
-        </div>
-        <div className="card">
-          <h2>Requested styles</h2>
-          <p className="sub">Joke style members asked for (Auto = let the model choose).</p>
-          <Bars rows={s.styles} />
         </div>
         <div className="card">
           <h2>Safety checks</h2>

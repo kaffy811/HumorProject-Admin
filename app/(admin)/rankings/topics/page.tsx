@@ -16,7 +16,7 @@ export default async function Topics() {
     <div className="stack">
       <header className="page-head" style={{ marginBottom: 0 }}>
         <div>
-          <span className="eyebrow">Rankings &amp; votes</span>
+          <span className="eyebrow">Rankings</span>
           <h1>Columbia or New York?</h1>
           <p>What the jokes are about, across {n(s.total)} live posts. Each post is matched by keywords in its caption and scene description; if it fits several topics, Columbia counts first, then New York City, then general student life. Topics are ranked by total Ha.</p>
         </div>

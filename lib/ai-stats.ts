@@ -92,7 +92,7 @@ export function computeAiStats(input: { generations: GenerationRow[]; captions: 
   // One request returns four captions in four different styles, in no meaningful
   // order, so compare styles: how often a style is chosen when it is offered.
   const offered = new Map<string, number>(), chosen = new Map<string, number>();
-  let edited = 0, matched = 0;
+  let edited = 0, matched = 0, singleStyle = 0;
   for (const g of latestDone.values()) {
     const caption = aiCaptionByImage.get(g.image_id);
     if (!caption) continue;
@@ -100,6 +100,9 @@ export function computeAiStats(input: { generations: GenerationRow[]; captions: 
     const pick = options.find((c) => c.original.trim() === caption.content.trim() || c.text.trim() === caption.content.trim());
     if (!pick) { edited++; continue; }
     matched++;
+    // Only runs that really offered four different styles (prompt caption-styles-v3+);
+    // older runs used one member-chosen style for all four.
+    if (new Set(options.map((c) => c.style).filter(Boolean)).size !== 4) { singleStyle++; continue; }
     for (const c of options) offered.set(c.style || "Unknown", (offered.get(c.style || "Unknown") || 0) + 1);
     chosen.set(pick.style || "Unknown", (chosen.get(pick.style || "Unknown") || 0) + 1);
   }
@@ -132,10 +135,9 @@ export function computeAiStats(input: { generations: GenerationRow[]; captions: 
       usage: totals,
       providers: new Set(input.generations.map((g) => g.provider)).size,
     },
-    models, versions, styleWins, edited, matched, days,
+    models, versions, styleWins, edited, matched, singleStyle, days,
     regenerations: median(runsPerPhoto),
     failures: count(input.generations.filter((g) => g.status === "failed"), (g) => g.failure_stage || "unknown"),
-    styles: count(input.generations, (g) => g.joke_style || "Auto"),
     moderation: count(input.moderation, (m) => `${m.model}\u0000${m.allowed ? "allowed" : "blocked"}`).map((r) => {
       const [model, verdict] = r.label.split("\u0000");
       return { model, verdict, count: r.value };

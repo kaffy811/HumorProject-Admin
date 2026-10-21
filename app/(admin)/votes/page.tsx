@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-// Votes now live under Rankings & votes; keep old links working.
+// Old links: scores live under Rankings & votes, individual votes in the activity log.
 export default async function Votes({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab } = await searchParams;
-  redirect(tab === "ha" ? "/rankings/votes" : tab === "hearts" ? "/rankings/hearts" : "/rankings/ratings");
+  redirect(tab === "ha" ? "/activity?action=ha" : tab === "hearts" ? "/activity?action=heart" : "/rankings/ratings");
 }

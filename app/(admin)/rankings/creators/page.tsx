@@ -14,7 +14,7 @@ export default async function Creators({ searchParams }: { searchParams: Promise
     <div>
       <header className="page-head">
         <div>
-          <span className="eyebrow">Rankings &amp; votes · same list as the member Top page</span>
+          <span className="eyebrow">Rankings · same list as the member Top page</span>
           <h1>Hottest creators.</h1>
           <p>Top 50 members by total Ha received on their live posts, {PERIODS[period].toLowerCase()}. When tied, the member who needed fewer posts ranks higher.</p>
         </div>

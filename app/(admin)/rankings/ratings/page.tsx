@@ -11,9 +11,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
     <div>
       <header className="page-head">
         <div>
-          <span className="eyebrow">Rankings &amp; votes</span>
+          <span className="eyebrow">Rankings</span>
           <h1>Post scores.</h1>
-          <p>Every live post with its vote totals. Sort by Ha, net score (Ha − downvotes), Ha per day since posting, confidence (a fair share-of-positive-votes score that does not over-reward posts with very few votes) or comments.</p>
+          <p>Every live post with its vote totals. Sort by Ha, net score (Ha − downvotes), Ha per day since posting, confidence (a fair share-of-positive-votes score that does not over-reward posts with very few votes) or comments. Who voted on a post: open it, or filter the activity log by “Gave a Ha”.</p>
         </div>
       </header>
       <RankTabs current="/rankings/ratings" />

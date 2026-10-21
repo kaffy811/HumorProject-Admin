@@ -124,7 +124,14 @@ assert.equal(ai.totals.runs, 4);
 assert.equal(ai.totals.published, 2, "only the latest completed run per photo counts as published");
 assert.equal(ai.totals.providers, 2);
 assert.equal(ai.matched, 1, "x1 matched a candidate of g2 (its latest run)");
-assert.deepEqual(ai.styleWins.map((s) => [s.style, s.offered, s.picked]), [["Pun", 4, 1]]);
+assert.deepEqual(ai.styleWins, [], "candidates that share one style are not a style choice");
+assert.equal(ai.singleStyle, 1);
+const styled = (texts: string[]) => texts.map((t, i) => ({ text: t, originalText: t, style: ["Pun", "Roast", "Absurd", "Wholesome"][i] }));
+const ai2 = computeAiStats({ now, votes: [], moderation: [],
+  generations: [gen("s1", "q1", { caption_candidates: styled(["a", "b", "c", "d"]) }), gen("s2", "q2", { caption_candidates: styled(["e", "f", "g", "h"]) })],
+  captions: [{ id: "y1", image_id: "q1", content: "b", source: "ai", deleted_at: null }, { id: "y2", image_id: "q2", content: "f", source: "ai", deleted_at: null }] });
+assert.deepEqual(ai2.styleWins[0], { style: "Roast", offered: 2, picked: 2, rate: 1 });
+assert.deepEqual(ai2.styleWins.slice(1).map((w) => w.picked), [0, 0, 0]);
 assert.equal(ai.edited, 1);
 assert.equal(ai.regenerations, 1.5);
 const gemini = ai.models.find((m) => m.model === "gemini-x")!;

@@ -1,6 +1,5 @@
 import Link from "next/link";
-// One section, two kinds of view: rankings (who/what is winning) and the raw
-// vote records behind them.
+// Individual votes and hearts are browsed in the activity log.
 const GROUPS = [
   { title: "Rankings", hint: "who and what is winning", tabs: [
     { href: "/rankings/posts", label: "Hot posts" },
@@ -8,10 +7,6 @@ const GROUPS = [
     { href: "/rankings/most-posts", label: "Most posts" },
     { href: "/rankings/topics", label: "Topics" },
     { href: "/rankings/ratings", label: "Post scores" },
-  ] },
-  { title: "Vote records", hint: "every individual vote", tabs: [
-    { href: "/rankings/votes", label: "Ha votes" },
-    { href: "/rankings/hearts", label: "Comment hearts" },
   ] },
 ];
 export function RankTabs({ current }: { current: string }) {
