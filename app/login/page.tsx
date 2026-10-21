@@ -10,12 +10,15 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   return (
     <main className="login">
       <div className="card login-card">
+        {/* eslint-disable-next-line @next/next/no-img-element -- static mascot */}
+        <img className="login-mascot" src="/baby/wink.webp" alt="" />
         <div className="brand" style={{ justifyContent: "center", padding: 0 }}>
-          <span className="brand-mark">Ha</span>
-          <span>Humor Admin<small>The Humor Project</small></span>
+          <span className="brand-mark">h.</span>
+          <span style={{ textAlign: "left" }}>Humor Admin<small>The Humor Project</small></span>
         </div>
+        <h1>Staff only, sweetie.</h1>
         <p className="muted" style={{ margin: 0 }}>
-          Restricted console. Sign in with the Google account that holds superadmin rights on The Humor Project.
+          Sign in with Google. Superadmins go straight in; everyone else can ask for access.
         </p>
         {error && ERRORS[error] && <div className="notice notice-bad" role="alert">{ERRORS[error]}</div>}
         <GoogleButton next={next} />

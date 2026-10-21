@@ -25,7 +25,7 @@ export default async function Votes({ searchParams }: { searchParams: Search }) 
       <header className="page-head">
         <div>
           <span className="eyebrow">Read only</span>
-          <h1>Votes &amp; ratings</h1>
+          <h1>Votes &amp; ratings.</h1>
           <p>Ha votes are rows in <span className="mono">humor_votes</span> (value +1, legacy −1 downvotes are shown too). Comment hearts live in <span className="mono">humor_comment_votes</span>.</p>
         </div>
       </header>

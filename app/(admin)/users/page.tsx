@@ -42,7 +42,7 @@ export default async function Users({ searchParams }: { searchParams: Search }) 
       <header className="page-head">
         <div>
           <span className="eyebrow">Read only</span>
-          <h1>Users &amp; profiles</h1>
+          <h1>Users &amp; profiles.</h1>
           <p>Every account in the shared database. Emails and sign-in history come from Supabase Auth; profile fields from <span className="mono">public.profiles</span>.</p>
         </div>
       </header>

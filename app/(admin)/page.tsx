@@ -4,13 +4,14 @@ import { dashboardStats } from "@/lib/data";
 import { duration, handle, n, pct } from "@/lib/format";
 import { Bars, Funnel, Heatmap, Trend } from "@/components/charts";
 import { PersonLink } from "@/components/Person";
+import { pendingRequestCount } from "@/lib/requests";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const hour = (h: number) => (h === 0 ? "midnight" : h < 12 ? `${h} AM` : h === 12 ? "noon" : `${h - 12} PM`);
 
 export default async function Dashboard() {
   await requireAdmin();
-  const s = await dashboardStats();
+  const [s, pending] = await Promise.all([dashboardStats(), pendingRequestCount()]);
   const t = s.totals;
   const bestStyle = s.styles.find((style) => style.posts >= 2) ?? s.styles[0];
   const bestLength = [...s.lengths].filter((l) => l.posts).sort((a, b) => b.average - a.average)[0];
@@ -19,15 +20,24 @@ export default async function Dashboard() {
       <header className="page-head">
         <div>
           <span className="eyebrow">Laugh Lab</span>
-          <h1>What&apos;s actually funny on campus</h1>
+          <h1>What&apos;s actually funny.</h1>
           <p>Live numbers from the shared Humor Project database. Times are New York time; deleted posts are excluded from laugh stats.</p>
         </div>
         <Link className="btn btn-primary" href="/media/new">+ New media</Link>
       </header>
 
+      {!!pending && (
+        <div className="notice notice-warn notice-row" role="status">
+          <span>✉ {pending} {pending === 1 ? "member is" : "members are"} waiting for superadmin approval.</span>
+          <Link className="btn btn-primary" href="/requests">Review requests</Link>
+        </div>
+      )}
+
       <section className="hero">
         <div className="hero-card">
-          <span className="eyebrow" style={{ color: "#c9d4c4" }}>Laugh rate</span>
+          {/* eslint-disable-next-line @next/next/no-img-element -- static mascot */}
+          <img className="hero-mascot" src="/baby/giggle.webp" alt="" />
+          <span className="eyebrow">Laugh rate</span>
           <div className="big num">{pct(Math.round(t.laughRate * t.livePosts), t.livePosts)}</div>
           <p>of live posts have earned at least one Ha. The median post waits <b>{duration(s.medianFirstLaugh)}</b> for its first laugh.</p>
           <div className="hero-facts">

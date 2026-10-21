@@ -7,6 +7,8 @@ Superadmin console for **The Humor Project**. Source: [kaffy811/HumorProject-Adm
 | `/` Laugh Lab | Creative stats: laugh rate, time-to-first-laugh, peak comedy hour heatmap, funniest joke style, "is brevity the soul of wit?", photo → punchline funnel, hall of fame, crowd pleasers vs. generous laughers, self-Ha count, Gemini health/tokens/latency/failure stages, 30-day trend. |
 | `/users`, `/users/[id]` | **Read** users and profiles: profile fields, auth email/providers/last sign-in, posts, Ha given/received, comments. Search + filters. |
 | `/media`, `/media/new`, `/media/[id]` | **Create / read / update / delete** AI-generated media: upload an image + caption (stored privately as WebP with the blurred preview the member app needs), edit caption/style/source/scene description, soft-delete (same as an author delete), restore, or purge permanently (rows + Storage files). Shows the Gemini prompts, model, candidates and token usage behind each post. |
+| `/requests` | Superadmin inbox: members who asked for access, with their message, email and post count. **Approve** (they become superadmins) or **Decline**; history of every decision. The sidebar shows a badge and the dashboard a banner while requests wait. |
+| `/denied` | What a signed-in non-admin sees: a **Request superadmin access** button with an optional message, then the request's status (waiting / declined → request again). |
 | `/votes` | **Read** votes: per-post ratings (Ha, downvotes, net, Ha/day, Wilson confidence, comments — sortable), every Ha vote, every comment heart. |
 
 ## Security model
@@ -31,6 +33,10 @@ Yes, if the only way to become an admin were the admin UI. So the flag is delibe
    or locally with the service key in `admin/.env.local`: `npm run grant-superadmin -- you@school.edu` (`--revoke` to undo).
 
 The `/denied` page shows the signed-in email and the exact command, so a new admin knows what to ask an owner for.
+
+## Access requests
+
+Migration `supabase/migrations/202610210001_superadmin_requests.sql` (in kaffy811/HumorProject) adds `humor_admin_requests` (service-role only, one pending request per member) and `humor_decide_admin_request()`, which re-checks that the approver is a superadmin and closes the request and flips `is_superadmin` in one transaction. Until it is applied, the console works and the requests page explains what to run.
 
 ## Deploy (separate Vercel project)
 

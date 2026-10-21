@@ -60,7 +60,7 @@ app.stdout.on("data", (d) => (log += d)); app.stderr.on("data", (d) => (log += d
 try {
   for (let i = 0; i < 60 && !log.includes("Ready"); i++) await new Promise((r) => setTimeout(r, 500));
   const get = (path, headers = {}) => fetch(`http://127.0.0.1:${APP_PORT}${path}`, { redirect: "manual", headers });
-  for (const path of ["/", "/users", "/users/" + MEMBER, "/media", "/media/new", "/votes?tab=ha"]) {
+  for (const path of ["/", "/users", "/users/" + MEMBER, "/media", "/media/new", "/votes?tab=ha", "/requests"]) {
     const anon = await get(path);
     assert.equal(anon.status, 307, `anonymous ${path}`);
     assert.match(anon.headers.get("location"), /\/login/);
@@ -74,9 +74,13 @@ try {
     assert.equal(admin.headers.get("cache-control"), "private, no-store");
   }
   const dash = await (await get("/", { cookie: cookie(ADMIN) })).text();
-  assert.match(dash, /What&#x27;s actually funny on campus|What's actually funny on campus/);
+  assert.match(dash, /actually funny/);
   const users = await (await get("/users", { cookie: cookie(ADMIN) })).text();
   assert.match(users, /@member/); assert.match(users, /Superadmin/);
+  const denied = await (await get("/denied?reason=forbidden", { cookie: cookie(MEMBER) })).text();
+  assert.match(denied, /Request superadmin access/, "non-admins get a request button");
+  const anonDenied = await (await get("/denied?reason=forbidden")).text();
+  assert.doesNotMatch(anonDenied, /Request superadmin access/, "signed-out visitors cannot request");
   const api = await get("/api/anything", { cookie: cookie(MEMBER) });
   assert.equal(api.status, 403);
   const login = await get("/login");
@@ -85,7 +89,7 @@ try {
   // A forged Server Action POST from a non-admin is stopped by the proxy before any action runs.
   const action = await fetch(`http://127.0.0.1:${APP_PORT}/media/new`, { method: "POST", redirect: "manual", headers: { cookie: cookie(MEMBER), "next-action": "x", origin: `http://127.0.0.1:${APP_PORT}` }, body: "x" });
   assert.equal(action.status, 307);
-  console.log("PASS anonymous → /login, members and non-Google sessions → /denied, superadmin pages render, actions blocked for non-admins.");
+  console.log("PASS anonymous → /login, members and non-Google sessions → /denied, superadmin pages render, members can request access, actions blocked for non-admins.");
 } finally {
   process.kill(-app.pid); supa.close();
 }

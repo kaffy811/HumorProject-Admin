@@ -13,7 +13,7 @@ export default async function NewMedia() {
       <header className="page-head" style={{ marginBottom: 0 }}>
         <div>
           <span className="eyebrow">Create</span>
-          <h1>New AI media post</h1>
+          <h1>New media post.</h1>
           <p>Publishes straight to the member feed: an image in private Storage plus its caption.</p>
         </div>
       </header>

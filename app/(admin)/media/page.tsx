@@ -47,7 +47,7 @@ export default async function Media({ searchParams }: { searchParams: Search }) 
       <header className="page-head">
         <div>
           <span className="eyebrow">Create · read · update · delete</span>
-          <h1>AI-generated media</h1>
+          <h1>AI-generated media.</h1>
           <p>Every published photo + caption. Edit captions, soft-delete posts from the feed, restore them or purge them permanently.</p>
         </div>
         <Link className="btn btn-primary" href="/media/new">+ New media</Link>
