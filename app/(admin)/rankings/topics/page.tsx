@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin";
 import { topicStats } from "@/lib/rankings";
 import { TOPICS, topicLabel } from "@/lib/topics";
 import { handle, n, pct } from "@/lib/format";
-import { Bars } from "@/components/charts";
+import { TopicTable } from "@/components/TopicTable";
 import { RankTabs } from "@/components/RankTabs";
 export const metadata: Metadata = { title: "Topics" };
 
@@ -16,23 +16,16 @@ export default async function Topics() {
     <div className="stack">
       <header className="page-head" style={{ marginBottom: 0 }}>
         <div>
-          <span className="eyebrow">Rankings</span>
+          <span className="eyebrow">Rankings &amp; votes</span>
           <h1>Columbia or New York?</h1>
           <p>What the jokes are about, across {n(s.total)} live posts. Each post is matched by keywords in its caption and scene description; if it fits several topics, Columbia counts first, then New York City, then general student life. Topics are ranked by total Ha.</p>
         </div>
       </header>
       <RankTabs current="/rankings/topics" />
-      <section className="grid grid-2">
-        <div className="card">
-          <h2>Share of posts</h2>
-          <p className="sub">How often each topic comes up.</p>
-          <Bars rows={all.map((t) => ({ label: topicLabel(t.key), value: t.posts, tip: `${topicLabel(t.key)}: ${t.posts} posts (${pct(t.posts, s.total)})` }))} />
-        </div>
-        <div className="card">
-          <h2>Ha per post</h2>
-          <p className="sub">Which topic lands best, on average.</p>
-          <Bars rows={all.map((t) => ({ label: topicLabel(t.key), value: t.haPerPost }))} format={(v) => v.toFixed(2)} />
-        </div>
+      <section className="card">
+        <h2>Topic ranking</h2>
+        <p className="sub">Ranked by total Ha. “Other” has no Columbia, NYC or student-life keyword and is listed last.</p>
+        <TopicTable topics={all} total={s.total} />
       </section>
       {all.map((t, index) => {
         const meta = TOPICS.find((x) => x.key === t.key);

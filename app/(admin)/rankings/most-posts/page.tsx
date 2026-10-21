@@ -13,7 +13,7 @@ export default async function MostPosts() {
     <div>
       <header className="page-head">
         <div>
-          <span className="eyebrow">Rankings</span>
+          <span className="eyebrow">Rankings &amp; votes</span>
           <h1>Most posts.</h1>
           <p>Members ranked by how many live posts they have, all time. When tied, more Ha received ranks higher, then whoever posted most recently.</p>
         </div>

@@ -14,7 +14,7 @@ export default async function HotPosts({ searchParams }: { searchParams: Promise
     <div>
       <header className="page-head">
         <div>
-          <span className="eyebrow">Rankings · same list as the member Top page</span>
+          <span className="eyebrow">Rankings &amp; votes · same list as the member Top page</span>
           <h1>Hot posts.</h1>
           <p>Top 50 live posts, {PERIODS[period].toLowerCase()}. Ranked by Ha (likes): more Ha ranks higher. When Ha is tied, the more recently published post ranks higher — newer posts that collected the same laughs faster are hotter.</p>
         </div>

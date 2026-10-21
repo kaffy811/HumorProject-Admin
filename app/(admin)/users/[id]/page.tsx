@@ -99,7 +99,7 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
       <section className="card">
         <div className="notice-row">
           <div><h2>Recent activity</h2><p className="sub" style={{ margin: 0 }}>Latest 25 actions by this member.</p></div>
-          <Link className="btn" href={`/activity?user=${id}&range=all`}>Full log →</Link>
+          <Link className="btn" href={`/activity?user=${id}`}>Full log →</Link>
         </div>
         {activity === null ? <p className="empty">Activity logging is not set up yet (migration 202610220002).</p> : activity.length ? (
           <div className="table-wrap" style={{ marginTop: 14 }}>

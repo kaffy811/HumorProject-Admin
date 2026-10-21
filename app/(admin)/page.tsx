@@ -5,7 +5,7 @@ import { duration, handle, n, pct, sourceLabel } from "@/lib/format";
 import { Bars, Funnel, Heatmap, Trend } from "@/components/charts";
 import { pendingRequestCount } from "@/lib/requests";
 import { leaderboard, mostPosts, topicStats } from "@/lib/rankings";
-import { topicLabel } from "@/lib/topics";
+import { TopicTable } from "@/components/TopicTable";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const hour = (h: number) => (h === 0 ? "midnight" : h < 12 ? `${h} AM` : h === 12 ? "noon" : `${h - 12} PM`);
@@ -105,17 +105,40 @@ export default async function Dashboard() {
         </div>
       </section>
 
-      <section className="card">
-        <div className="notice-row">
-          <div>
-            <h2>Columbia or New York?</h2>
-            <p className="sub" style={{ margin: 0 }}>What the jokes are about, ranked by total Ha. Keyword-matched on caption and scene.</p>
+      <section className="grid grid-2">
+        <div className="card">
+          <div className="notice-row">
+            <div>
+              <h2>Columbia or New York?</h2>
+              <p className="sub" style={{ margin: 0 }}>What the jokes are about, ranked by total Ha (keywords in caption and scene).</p>
+            </div>
+            <Link className="btn" href="/rankings/topics">Topic ranking →</Link>
           </div>
-          <Link className="btn" href="/rankings/topics">Topic ranking →</Link>
+          <div style={{ marginTop: 14 }}><TopicTable topics={[...topics.ranked, topics.other]} total={topics.total} /></div>
         </div>
-        <div className="grid grid-2" style={{ marginTop: 14 }}>
-          <Bars rows={[...topics.ranked, topics.other].map((t) => ({ label: topicLabel(t.key), value: t.ha, tip: `${topicLabel(t.key)}: ${t.ha} Ha over ${t.posts} posts` }))} unit=" Ha" />
-          <Bars rows={[...topics.ranked, topics.other].map((t) => ({ label: topicLabel(t.key), value: t.posts }))} unit=" posts" />
+        <div className="card">
+          <h2>Gemini meter</h2>
+          <p className="sub">Caption generation health and spend proxy.</p>
+          <dl className="kv">
+            <dt>Completed</dt><dd className="num">{n(s.gemini.completed)} <span className="badge badge-good">{pct(s.gemini.completed, s.gemini.total)}</span></dd>
+            <dt>Failed</dt><dd className="num">{n(s.gemini.failed)} {s.gemini.failed > 0 && <span className="badge badge-bad">{pct(s.gemini.failed, s.gemini.total)}</span>}</dd>
+            <dt>In flight</dt><dd className="num">{n(s.gemini.processing)}</dd>
+            <dt>Tokens used</dt><dd className="num">{n(s.gemini.tokens)}</dd>
+            <dt>Per caption set</dt><dd className="num">{n(Math.round(s.gemini.tokensPerCaptionSet))} tokens</dd>
+            <dt>Median latency</dt><dd className="num">{duration(s.gemini.medianLatency)}</dd>
+            <dt>Models</dt><dd>{s.gemini.models.map((m) => `${m.model} (${m.count})`).join(", ") || "—"}</dd>
+          </dl>
+          {s.gemini.failures.length > 0 && (
+            <>
+              <h2 style={{ marginTop: 16 }}>Where generations fail</h2>
+              <Bars rows={s.gemini.failures.map((f) => ({ label: f.stage, value: f.count }))} />
+            </>
+          )}
+          {s.sources.length > 0 && (
+            <p className="muted" style={{ margin: "14px 0 0", fontSize: 12.5 }}>
+              Live posts by source: {s.sources.map((x) => `${sourceLabel(x.source)} ${n(x.count)}`).join(" · ")} · <Link href="/ai">AI details →</Link>
+            </p>
+          )}
         </div>
       </section>
 
@@ -142,52 +165,26 @@ export default async function Dashboard() {
           <Link className="btn" href="/rankings/posts" style={{ marginTop: 14 }}>Full ranking →</Link>
         </div>
         <div className="card">
-          <h2>Creators</h2>
-          <p className="sub">All time. Open either list for the full ranking.</p>
-          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 18 }}>
-            <div>
-              <span className="eyebrow">Hottest · Ha received</span>
-              <ol className="mini-rank">
-                {board.people.slice(0, 5).map((p) => (
-                  <li key={p.user.id}><Link href={`/users/${p.user.id}`}><b>{p.user.name}</b></Link><span className="num">{n(p.haReceived)}</span></li>
-                ))}
-              </ol>
-              <Link className="btn" href="/rankings/creators">Full ranking →</Link>
-            </div>
-            <div>
-              <span className="eyebrow">Most posts</span>
-              <ol className="mini-rank">
-                {posters.slice(0, 5).map((p) => (
-                  <li key={p.id}><Link href={`/users/${p.id}`}><b>{handle(p.profile ?? { id: p.id })}</b></Link><span className="num">{n(p.posts)}</span></li>
-                ))}
-              </ol>
-              <Link className="btn" href="/rankings/most-posts">Full ranking →</Link>
-            </div>
-          </div>
+          <h2>Hottest creators</h2>
+          <p className="sub">Most Ha received, all time — same as the member Top page.</p>
+          <ol className="mini-rank">
+            {board.people.slice(0, 5).map((p) => (
+              <li key={p.user.id}><Link href={`/users/${p.user.id}`}><b>{p.user.name}</b></Link><span className="badge badge-brand num">{n(p.haReceived)} Ha</span></li>
+            ))}
+          </ol>
+          {!board.people.length && <p className="empty">Nobody yet.</p>}
+          <Link className="btn" href="/rankings/creators">Full ranking →</Link>
         </div>
         <div className="card">
-          <h2>Gemini meter</h2>
-          <p className="sub">Caption generation health and spend proxy.</p>
-          <dl className="kv">
-            <dt>Completed</dt><dd className="num">{n(s.gemini.completed)} <span className="badge badge-good">{pct(s.gemini.completed, s.gemini.total)}</span></dd>
-            <dt>Failed</dt><dd className="num">{n(s.gemini.failed)} {s.gemini.failed > 0 && <span className="badge badge-bad">{pct(s.gemini.failed, s.gemini.total)}</span>}</dd>
-            <dt>In flight</dt><dd className="num">{n(s.gemini.processing)}</dd>
-            <dt>Tokens used</dt><dd className="num">{n(s.gemini.tokens)}</dd>
-            <dt>Per caption set</dt><dd className="num">{n(Math.round(s.gemini.tokensPerCaptionSet))} tokens</dd>
-            <dt>Median latency</dt><dd className="num">{duration(s.gemini.medianLatency)}</dd>
-            <dt>Models</dt><dd>{s.gemini.models.map((m) => `${m.model} (${m.count})`).join(", ") || "—"}</dd>
-          </dl>
-          {s.gemini.failures.length > 0 && (
-            <>
-              <h2 style={{ marginTop: 16 }}>Where generations fail</h2>
-              <Bars rows={s.gemini.failures.map((f) => ({ label: f.stage, value: f.count }))} />
-            </>
-          )}
-          {s.sources.length > 0 && (
-            <p className="muted" style={{ margin: "14px 0 0", fontSize: 12.5 }}>
-              Live posts by source: {s.sources.map((x) => `${sourceLabel(x.source)} ${n(x.count)}`).join(" · ")} · <Link href="/ai">AI details →</Link>
-            </p>
-          )}
+          <h2>Most posts</h2>
+          <p className="sub">Most live posts, all time.</p>
+          <ol className="mini-rank">
+            {posters.slice(0, 5).map((p) => (
+              <li key={p.id}><Link href={`/users/${p.id}`}><b>{handle(p.profile ?? { id: p.id })}</b></Link><span className="badge num">{n(p.posts)} posts</span></li>
+            ))}
+          </ol>
+          {!posters.length && <p className="empty">Nobody yet.</p>}
+          <Link className="btn" href="/rankings/most-posts">Full ranking →</Link>
         </div>
       </section>
     </div>

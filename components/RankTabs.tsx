@@ -1,15 +1,31 @@
 import Link from "next/link";
-const TABS = [
-  { href: "/rankings/posts", label: "Hot posts" },
-  { href: "/rankings/creators", label: "Hottest creators" },
-  { href: "/rankings/most-posts", label: "Most posts" },
-  { href: "/rankings/topics", label: "Topics" },
+// One section, two kinds of view: rankings (who/what is winning) and the raw
+// vote records behind them.
+const GROUPS = [
+  { title: "Rankings", hint: "who and what is winning", tabs: [
+    { href: "/rankings/posts", label: "Hot posts" },
+    { href: "/rankings/creators", label: "Hottest creators" },
+    { href: "/rankings/most-posts", label: "Most posts" },
+    { href: "/rankings/topics", label: "Topics" },
+    { href: "/rankings/ratings", label: "Post scores" },
+  ] },
+  { title: "Vote records", hint: "every individual vote", tabs: [
+    { href: "/rankings/votes", label: "Ha votes" },
+    { href: "/rankings/hearts", label: "Comment hearts" },
+  ] },
 ];
 export function RankTabs({ current }: { current: string }) {
   return (
-    <nav className="tabs" aria-label="Rankings">
-      {TABS.map((t) => <Link key={t.href} className="tab" href={t.href} aria-current={current === t.href ? "page" : undefined}>{t.label}</Link>)}
-    </nav>
+    <div className="rank-groups">
+      {GROUPS.map((g) => (
+        <nav key={g.title} className="rank-group" aria-label={g.title}>
+          <span className="eyebrow">{g.title} <span className="muted" style={{ textTransform: "none", letterSpacing: 0 }}>· {g.hint}</span></span>
+          <div className="tabs" style={{ marginBottom: 0 }}>
+            {g.tabs.map((t) => <Link key={t.href} className="tab" href={t.href} aria-current={current === t.href ? "page" : undefined}>{t.label}</Link>)}
+          </div>
+        </nav>
+      ))}
+    </div>
   );
 }
 export function PeriodTabs({ base, period }: { base: string; period: string }) {

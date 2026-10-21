@@ -149,3 +149,10 @@ assert.equal(describeAction("ha"), "Gave a Ha");
 assert.equal(detailText("login", { userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit Version/17 Safari/605" }), "Safari on macOS");
 assert.equal(detailText("edit", { caption: "new", before: "old" }), "“new” · was “old”");
 console.log("PASS topics and activity descriptions.");
+
+import { nyLocalToIso } from "../lib/format";
+assert.equal(nyLocalToIso("2026-10-20T09:30"), "2026-10-20T13:30:00.000Z", "EDT is UTC-4");
+assert.equal(nyLocalToIso("2026-12-01T00:00"), "2026-12-01T05:00:00.000Z", "EST is UTC-5");
+assert.equal(nyLocalToIso("2026-13-01T00:00") === null || nyLocalToIso("bad") === null, true);
+assert.equal(nyLocalToIso("bad"), null);
+console.log("PASS New York time range parsing.");

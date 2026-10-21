@@ -14,9 +14,6 @@ export const ACTIONS: Record<string, string> = {
   grant_superadmin: "Became a superadmin", revoke_superadmin: "Lost superadmin access",
 };
 export const describe = (action: string) => ACTIONS[action] ?? action.replace(/_/g, " ");
-export const RANGES: Record<string, { label: string; hours: number | null }> = {
-  "24h": { label: "Last 24 hours", hours: 24 }, "7d": { label: "Last 7 days", hours: 168 }, "30d": { label: "Last 30 days", hours: 720 }, all: { label: "All time", hours: null },
-};
 // Short human detail for a log row's JSON payload.
 export function detailText(action: string, detail: Record<string, unknown>) {
   const parts: string[] = [];
