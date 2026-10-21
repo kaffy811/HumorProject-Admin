@@ -40,7 +40,8 @@ export function MediaForm({ initial, hasOfficial }: { initial?: Initial; hasOffi
         <div className="field">
           <label htmlFor="source">Source</label>
           <select id="source" name="source" className="select" defaultValue={initial?.source ?? "handmade"} onChange={(e) => setSource(e.target.value)}>
-            {SOURCES.map((source) => <option key={source} value={source}>{SOURCE_LABELS[source].label}</option>)}
+            {/* "seed" is only set by the seed import script; keep it only for posts that already have it. */}
+            {SOURCES.filter((s) => s !== "seed" || initial?.source === "seed").map((s) => <option key={s} value={s}>{SOURCE_LABELS[s].label}</option>)}
           </select>
           <span className="hint">{SOURCE_LABELS[source]?.hint}</span>
         </div>

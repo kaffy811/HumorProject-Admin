@@ -62,7 +62,8 @@ export default async function Media({ searchParams }: { searchParams: Search }) 
       </header>
       {params.purged && <div className="notice notice-good" role="status" style={{ marginBottom: 14 }}>Post purged permanently.</div>}
       <nav className="tabs" aria-label="Caption source">
-        {sourceCounts.map(([key, total]) => (
+        {/* Seeds are import-only and usually absent: show the tab only when some exist. */}
+        {sourceCounts.filter(([key, total]) => key !== "seed" || total > 0 || source === "seed").map(([key, total]) => (
           <Link key={key || "all"} className="tab" href={tabHref(key)} aria-current={source === key ? "page" : undefined} title={key ? SOURCE_LABELS[key].hint : undefined}>
             {key ? sourceLabel(key) : "All posts"} <span className="muted num">{n(total)}</span>
           </Link>

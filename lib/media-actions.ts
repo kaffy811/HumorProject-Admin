@@ -21,6 +21,7 @@ export async function createMedia(_: ActionState, form: FormData): Promise<Actio
   const admin = await requireAdmin();
   const fields = parseMediaFields(form);
   if (!fields.ok) return { error: fields.error };
+  if (fields.value.source === "seed") return { error: "Official seed posts come only from the seed import script." };
   const file = form.get("image");
   if (!(file instanceof File) || !file.size) return { error: "Choose an image." };
   if (file.size > MAX_UPLOAD_BYTES) return { error: "Images must be 4 MB or smaller." };

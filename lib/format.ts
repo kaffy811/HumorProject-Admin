@@ -4,7 +4,7 @@ export const SOURCES = ["ai", "handmade", "seed"] as const;
 export const SOURCE_LABELS: Record<string, { label: string; hint: string }> = {
   ai: { label: "AI caption", hint: "A member picked (and maybe edited) one of the AI-generated captions" },
   handmade: { label: "Member-written", hint: "The member wrote the caption themselves, no AI" },
-  seed: { label: "Official seed", hint: "Starter posts imported by the seed script under the Little Mao account" },
+  seed: { label: "Official seed", hint: "Starter posts imported by scripts/seed.ts under the Little Mao account (none imported yet in production)" },
 };
 export const sourceLabel = (source: string) => SOURCE_LABELS[source]?.label ?? source;
 export const TIME_ZONE = "America/New_York";
