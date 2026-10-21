@@ -35,6 +35,7 @@ const supa = http.createServer((req, res) => {
   if (url.pathname === "/auth/v1/admin/users") return send(200, { users: profiles.map((p) => ({ ...userFor(jwt(p.id)), last_sign_in_at: null })), aud: "authenticated" });
   if (url.pathname.startsWith("/auth/v1/admin/users/")) return send(200, userFor(jwt(url.pathname.split("/").pop())));
   if (url.pathname.startsWith("/storage/")) return send(200, []);
+  if (url.pathname === "/rest/v1/rpc/humor_leaderboard") return send(200, { posts: [], people: [], computedAt: "2026-10-20T00:00:00Z", startsAt: null });
   if (url.pathname.startsWith("/rest/v1/")) {
     const table = url.pathname.split("/").pop();
     let rows = table === "profiles" ? profiles : [];
@@ -60,7 +61,7 @@ app.stdout.on("data", (d) => (log += d)); app.stderr.on("data", (d) => (log += d
 try {
   for (let i = 0; i < 60 && !log.includes("Ready"); i++) await new Promise((r) => setTimeout(r, 500));
   const get = (path, headers = {}) => fetch(`http://127.0.0.1:${APP_PORT}${path}`, { redirect: "manual", headers });
-  for (const path of ["/", "/users", "/users/" + MEMBER, "/posts", "/posts?source=handmade", "/posts/new", "/ai", "/ai/runs", "/votes?tab=ha", "/requests"]) {
+  for (const path of ["/", "/users", "/users/" + MEMBER, "/posts", "/posts?source=handmade", "/posts/new", "/ai", "/ai/runs", "/votes?tab=ha", "/requests", "/rankings/posts?period=week", "/rankings/creators", "/rankings/most-posts", "/rankings/topics", "/activity?category=auth", "/activity?range=all"]) {
     const anon = await get(path);
     assert.equal(anon.status, 307, `anonymous ${path}`);
     assert.match(anon.headers.get("location"), /\/login/);

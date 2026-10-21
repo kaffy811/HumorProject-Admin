@@ -5,9 +5,11 @@ import { config, secretKey } from "./config";
 import { dataSchema } from "./schema";
 export type ServiceClient = SupabaseClient<any, any, any>;
 // Bypasses RLS. Only reachable after requireAdmin() or the proxy gate.
-export function serviceClient(): ServiceClient {
+// Writes pass the acting admin so the activity log credits them, not the owner.
+export function serviceClient(actorId?: string): ServiceClient {
   return createClient(config().url, secretKey(), {
     db: { schema: dataSchema() },
     auth: { persistSession: false, autoRefreshToken: false },
+    global: actorId ? { headers: { "x-humor-admin": actorId } } : undefined,
   });
 }

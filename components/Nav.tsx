@@ -6,7 +6,9 @@ const LINKS = [
   { href: "/users", label: "Users", icon: "◉" },
   { href: "/posts", label: "Posts", icon: "▣" },
   { href: "/ai", label: "AI models & prompts", icon: "✦" },
+  { href: "/rankings", label: "Rankings", icon: "★" },
   { href: "/votes", label: "Votes & ratings", icon: "♥" },
+  { href: "/activity", label: "Activity log", icon: "☰" },
   { href: "/requests", label: "Access requests", icon: "✉" },
 ];
 export function Nav({ pending }: { pending: number | null }) {

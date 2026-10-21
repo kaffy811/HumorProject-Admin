@@ -28,7 +28,7 @@ export async function decideRequest(form: FormData) {
   const id = String(form.get("id") ?? "");
   const approve = form.get("decision") === "approve";
   if (!UUID.test(id)) return;
-  const { error } = await serviceClient().rpc("humor_decide_admin_request", { request_id: id, approver: admin.id, approve });
+  const { error } = await serviceClient(admin.id).rpc("humor_decide_admin_request", { request_id: id, approver: admin.id, approve });
   if (error && !/already decided/.test(error.message)) throw new Error(error.message);
   revalidatePath("/", "layout");
 }

@@ -28,7 +28,7 @@ export async function createMedia(_: ActionState, form: FormData): Promise<Actio
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (!sniffImage(bytes)) return { error: "Choose a JPG, PNG, WebP or GIF." };
 
-  const db = serviceClient();
+  const db = serviceClient(admin.id);
   let owner = admin.id;
   if (form.get("author") === "official") {
     const { data } = await db.from("profiles").select("id").eq("is_official", true).maybeSingle();
@@ -79,12 +79,12 @@ export async function createMedia(_: ActionState, form: FormData): Promise<Actio
 }
 
 export async function updateMedia(_: ActionState, form: FormData): Promise<ActionState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(form.get("id") ?? "");
   if (!UUID.test(id)) return { error: "Unknown post." };
   const fields = parseMediaFields(form);
   if (!fields.ok) return { error: fields.error };
-  const db = serviceClient();
+  const db = serviceClient(admin.id);
   const { data: caption, error } = await db.from("humor_captions")
     .update({ content: fields.value.content, style: fields.value.style, source: fields.value.source })
     .eq("id", id).select("image_id").maybeSingle();
@@ -99,20 +99,20 @@ export async function updateMedia(_: ActionState, form: FormData): Promise<Actio
 // Soft delete, exactly like an author deleting their own post: database
 // triggers remove its votes, comments, saves and reports and notify members.
 export async function deleteMedia(form: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(form.get("id") ?? "");
   if (!UUID.test(id)) return;
-  const { error } = await serviceClient().from("humor_captions").update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null);
+  const { error } = await serviceClient(admin.id).from("humor_captions").update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null);
   if (error) throw new Error(error.message);
   refresh(id);
   redirect(`/posts/${id}?deleted=1`);
 }
 
 export async function restoreMedia(form: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(form.get("id") ?? "");
   if (!UUID.test(id)) return;
-  const { error } = await serviceClient().from("humor_captions").update({ deleted_at: null }).eq("id", id);
+  const { error } = await serviceClient(admin.id).from("humor_captions").update({ deleted_at: null }).eq("id", id);
   if (error) throw new Error(error.message);
   refresh(id);
   redirect(`/posts/${id}?restored=1`);
@@ -121,10 +121,10 @@ export async function restoreMedia(form: FormData) {
 // Permanent removal of an already-deleted post: rows cascade from the image,
 // then its private files are removed from Storage.
 export async function purgeMedia(form: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(form.get("id") ?? "");
   if (!UUID.test(id) || form.get("confirm") !== "PURGE") redirect(`/posts/${id}?purge=confirm`);
-  const db = serviceClient();
+  const db = serviceClient(admin.id);
   const { data: caption } = await db.from("humor_captions").select("image_id,deleted_at,og_path").eq("id", id).maybeSingle();
   if (!caption) redirect("/posts");
   if (!caption.deleted_at) redirect(`/posts/${id}?purge=live`);

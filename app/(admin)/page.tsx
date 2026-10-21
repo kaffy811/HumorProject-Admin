@@ -3,15 +3,16 @@ import { requireAdmin } from "@/lib/admin";
 import { dashboardStats } from "@/lib/data";
 import { duration, handle, n, pct, sourceLabel } from "@/lib/format";
 import { Bars, Funnel, Heatmap, Trend } from "@/components/charts";
-import { PersonLink } from "@/components/Person";
 import { pendingRequestCount } from "@/lib/requests";
+import { leaderboard, mostPosts, topicStats } from "@/lib/rankings";
+import { topicLabel } from "@/lib/topics";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const hour = (h: number) => (h === 0 ? "midnight" : h < 12 ? `${h} AM` : h === 12 ? "noon" : `${h - 12} PM`);
 
 export default async function Dashboard() {
-  await requireAdmin();
-  const [s, pending] = await Promise.all([dashboardStats(), pendingRequestCount()]);
+  const admin = await requireAdmin();
+  const [s, pending, board, posters, topics] = await Promise.all([dashboardStats(), pendingRequestCount(), leaderboard("all", admin.id), mostPosts(), topicStats()]);
   const t = s.totals;
   const bestStyle = s.styles.find((style) => style.posts >= 2) ?? s.styles[0];
   const bestLength = [...s.lengths].filter((l) => l.posts).sort((a, b) => b.average - a.average)[0];
@@ -104,34 +105,65 @@ export default async function Dashboard() {
         </div>
       </section>
 
+      <section className="card">
+        <div className="notice-row">
+          <div>
+            <h2>Columbia or New York?</h2>
+            <p className="sub" style={{ margin: 0 }}>What the jokes are about, ranked by total Ha. Keyword-matched on caption and scene.</p>
+          </div>
+          <Link className="btn" href="/rankings/topics">Topic ranking →</Link>
+        </div>
+        <div className="grid grid-2" style={{ marginTop: 14 }}>
+          <Bars rows={[...topics.ranked, topics.other].map((t) => ({ label: topicLabel(t.key), value: t.ha, tip: `${topicLabel(t.key)}: ${t.ha} Ha over ${t.posts} posts` }))} unit=" Ha" />
+          <Bars rows={[...topics.ranked, topics.other].map((t) => ({ label: topicLabel(t.key), value: t.posts }))} unit=" posts" />
+        </div>
+      </section>
+
       <section className="grid grid-3">
         <div className="card">
           <h2>Hall of fame</h2>
-          <p className="sub">Most-laughed-at live posts.</p>
-          {s.hall.length ? (
+          <p className="sub">Top 5 of the member Top page (all time): more Ha first, ties go to the newer post.</p>
+          {board.posts.length ? (
             <div className="hall">
-              {s.hall.map((post, index) => (
+              {board.posts.slice(0, 5).map((post) => (
                 <Link className="hall-item" key={post.id} href={`/posts/${post.id}`}>
-                  <span className="rank">{index + 1}</span>
+                  <span className="rank">{post.rank}</span>
                   {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-                  {post.imagePath && s.thumbs[post.imagePath] ? <img className="thumb" src={s.thumbs[post.imagePath]} alt="" /> : <span className="thumb" />}
+                  {board.thumb(post.id) ? <img className="thumb" src={board.thumb(post.id)} alt="" /> : <span className="thumb" />}
                   <span style={{ minWidth: 0 }}>
-                    <span className="clip" style={{ fontWeight: 600 }}>{post.content}</span>
-                    <span className="muted" style={{ fontSize: 12 }}>{handle(post.author ?? { id: "?" })} · {post.style}</span>
+                    <span className="clip" style={{ fontWeight: 600 }}>{post.caption}</span>
+                    <span className="muted" style={{ fontSize: 12 }}>{post.author.name} · {post.style}</span>
                   </span>
-                  <span className="badge badge-brand num">{n(post.count)} Ha</span>
+                  <span className="badge badge-brand num">{n(post.haCount)} Ha</span>
                 </Link>
               ))}
             </div>
-          ) : <p className="empty">No laughs yet.</p>}
+          ) : <p className="empty">No posts yet.</p>}
+          <Link className="btn" href="/rankings/posts" style={{ marginTop: 14 }}>Full ranking →</Link>
         </div>
         <div className="card">
-          <h2>Crowd pleasers</h2>
-          <p className="sub">Creators with the most Ha received.</p>
-          <People rows={s.crowd} unit="Ha received" />
-          <h2 style={{ marginTop: 18 }}>Generous laughers</h2>
-          <p className="sub">Members who hand out the most Ha.</p>
-          <People rows={s.generous} unit="Ha given" />
+          <h2>Creators</h2>
+          <p className="sub">All time. Open either list for the full ranking.</p>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 18 }}>
+            <div>
+              <span className="eyebrow">Hottest · Ha received</span>
+              <ol className="mini-rank">
+                {board.people.slice(0, 5).map((p) => (
+                  <li key={p.user.id}><Link href={`/users/${p.user.id}`}><b>{p.user.name}</b></Link><span className="num">{n(p.haReceived)}</span></li>
+                ))}
+              </ol>
+              <Link className="btn" href="/rankings/creators">Full ranking →</Link>
+            </div>
+            <div>
+              <span className="eyebrow">Most posts</span>
+              <ol className="mini-rank">
+                {posters.slice(0, 5).map((p) => (
+                  <li key={p.id}><Link href={`/users/${p.id}`}><b>{handle(p.profile ?? { id: p.id })}</b></Link><span className="num">{n(p.posts)}</span></li>
+                ))}
+              </ol>
+              <Link className="btn" href="/rankings/most-posts">Full ranking →</Link>
+            </div>
+          </div>
         </div>
         <div className="card">
           <h2>Gemini meter</h2>
@@ -168,21 +200,6 @@ function Kpi({ label, value, note }: { label: string; value: number; note: strin
       <span className="eyebrow">{label}</span>
       <div className="value num">{n(value)}</div>
       <div className="note">{note}</div>
-    </div>
-  );
-}
-
-function People({ rows, unit }: { rows: { id: string; count: number; profile: Parameters<typeof PersonLink>[0]["profile"] }[]; unit: string }) {
-  if (!rows.length) return <p className="empty">Nobody yet.</p>;
-  return (
-    <div className="people">
-      {rows.map((row) => (
-        <div className="person" key={row.id}>
-          <PersonLink profile={row.profile} id={row.id} />
-          <span />
-          <span className="num muted" title={unit}>{n(row.count)}</span>
-        </div>
-      ))}
     </div>
   );
 }

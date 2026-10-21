@@ -134,3 +134,18 @@ assert.equal(ai.versions.length, 2);
 assert.equal(ai.failures[0].label, "provider");
 assert.equal(ai.moderation.length, 2);
 console.log("PASS AI analytics: usage parsing, per-model and per-prompt stats, candidate picks and edits.");
+
+// Topics and activity wording.
+import { classify } from "../lib/topics";
+import { describe as describeAction, detailText } from "../lib/activity";
+assert.deepEqual(classify("Freshmen walking out of Dodge Fitness Center after three sets"), { topic: "columbia", matches: ["dodge"] });
+assert.equal(classify("Me on the 1 train at 2am").topic, "nyc");
+assert.equal(classify("Butler Library before finals", "a subway car").topic, "columbia", "Columbia wins over NYC");
+assert.equal(classify("The local students handed their finals in forty minutes early").topic, "student");
+assert.equal(classify("A cat in a banana costume").topic, "other");
+assert.equal(classify("Parent orientation").topic, "other", "'rent' must not match inside 'parent'");
+assert.equal(classify("Pigeons own this city").topic, "nyc", "plural keywords match");
+assert.equal(describeAction("ha"), "Gave a Ha");
+assert.equal(detailText("login", { userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit Version/17 Safari/605" }), "Safari on macOS");
+assert.equal(detailText("edit", { caption: "new", before: "old" }), "“new” · was “old”");
+console.log("PASS topics and activity descriptions.");

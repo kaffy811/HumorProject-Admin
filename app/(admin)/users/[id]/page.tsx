@@ -5,6 +5,8 @@ import { PROFILE_COLUMNS, signedUrls } from "@/lib/data";
 import { serviceClient } from "@/lib/supabase/service";
 import { day, fullName, handle, n, when } from "@/lib/format";
 import type { ProfileRow } from "@/lib/stats";
+import { recentActivity } from "@/lib/activity-data";
+import { CATEGORIES, describe, detailText } from "@/lib/activity";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export default async function UserDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -35,9 +37,10 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
     const { count: c } = await db.from("humor_votes").select("id", { count: "exact", head: true }).eq("caption_id", post.id).eq("value", 1);
     haCounts.set(post.id, c ?? 0);
   }));
-  const [urls, avatar] = await Promise.all([
+  const [urls, avatar, activity] = await Promise.all([
     signedUrls(db, "humor-images", rows.map((row) => row.storage_path)),
     signedUrls(db, "humor-avatars", [profile.avatar_path]),
+    recentActivity(id),
   ]);
   const user = auth?.user;
   const received = [...haCounts.values()].reduce((a, b) => a + b, 0);
@@ -92,6 +95,29 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
             <dt>Banned until</dt><dd>{user?.banned_until ? when(user.banned_until) : "—"}</dd>
           </dl>
         </div>
+      </section>
+      <section className="card">
+        <div className="notice-row">
+          <div><h2>Recent activity</h2><p className="sub" style={{ margin: 0 }}>Latest 25 actions by this member.</p></div>
+          <Link className="btn" href={`/activity?user=${id}&range=all`}>Full log →</Link>
+        </div>
+        {activity === null ? <p className="empty">Activity logging is not set up yet (migration 202610220002).</p> : activity.length ? (
+          <div className="table-wrap" style={{ marginTop: 14 }}>
+            <table>
+              <thead><tr><th>When</th><th>Category</th><th>What</th><th>Details</th></tr></thead>
+              <tbody>
+                {activity.map((r) => (
+                  <tr key={r.id}>
+                    <td className="muted" style={{ whiteSpace: "nowrap" }}>{when(r.created_at)}</td>
+                    <td><span className="badge">{CATEGORIES[r.category] ?? r.category}</span></td>
+                    <td>{r.post_id && r.action !== "purge" ? <Link href={`/posts/${r.post_id}`}><b>{describe(r.action)}</b></Link> : <b>{describe(r.action)}</b>}{r.via === "admin" && <> <span className="badge badge-brand">via admin</span></>}</td>
+                    <td className="muted"><span className="clip">{detailText(r.action, r.detail)}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : <p className="empty">No activity recorded.</p>}
       </section>
       <section className="card">
         <h2>Posts</h2>

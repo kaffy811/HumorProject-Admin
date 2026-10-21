@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
     const result = gateDecision(user, claims?.claims, profile);
     if (result === "anonymous") return go("/login?error=session");
     if (result !== "admin") return go(`/denied?reason=${result}`);
+    // Best effort: a missing log table must not block sign-in.
+    await serviceClient().from("humor_activity_log").insert({ actor_id: user!.id, category: "auth", action: "admin_login", via: "admin" }).then(() => null, () => null);
     return response;
   } catch {
     // Never log codes, cookies or identity data.
