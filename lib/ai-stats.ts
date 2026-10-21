@@ -89,15 +89,22 @@ export function computeAiStats(input: { generations: GenerationRow[]; captions: 
     };
   }).sort((a, b) => (b.lastSeen ?? "").localeCompare(a.lastSeen ?? ""));
 
-  // Which of the four candidates members publish, and how often they rewrite it.
-  const picks = [0, 0, 0, 0];
+  // One request returns four captions in four different styles, in no meaningful
+  // order, so compare styles: how often a style is chosen when it is offered.
+  const offered = new Map<string, number>(), chosen = new Map<string, number>();
   let edited = 0, matched = 0;
   for (const g of latestDone.values()) {
     const caption = aiCaptionByImage.get(g.image_id);
     if (!caption) continue;
-    const index = candidatesOf(g.caption_candidates).findIndex((c) => c.original.trim() === caption.content.trim() || c.text.trim() === caption.content.trim());
-    if (index >= 0 && index < 4) { picks[index]++; matched++; } else edited++;
+    const options = candidatesOf(g.caption_candidates);
+    const pick = options.find((c) => c.original.trim() === caption.content.trim() || c.text.trim() === caption.content.trim());
+    if (!pick) { edited++; continue; }
+    matched++;
+    for (const c of options) offered.set(c.style || "Unknown", (offered.get(c.style || "Unknown") || 0) + 1);
+    chosen.set(pick.style || "Unknown", (chosen.get(pick.style || "Unknown") || 0) + 1);
   }
+  const styleWins = [...offered.entries()].map(([style, times]) => ({ style, offered: times, picked: chosen.get(style) || 0, rate: (chosen.get(style) || 0) / times }))
+    .sort((a, b) => b.rate - a.rate || b.offered - a.offered);
   const runsPerPhoto = [...aiCaptionByImage.keys()].map((image) => input.generations.filter((g) => g.image_id === image).length).filter(Boolean);
 
   const days: { date: string; completed: number; failed: number }[] = [];
@@ -125,7 +132,7 @@ export function computeAiStats(input: { generations: GenerationRow[]; captions: 
       usage: totals,
       providers: new Set(input.generations.map((g) => g.provider)).size,
     },
-    models, versions, picks, edited, matched, days,
+    models, versions, styleWins, edited, matched, days,
     regenerations: median(runsPerPhoto),
     failures: count(input.generations.filter((g) => g.status === "failed"), (g) => g.failure_stage || "unknown"),
     styles: count(input.generations, (g) => g.joke_style || "Auto"),

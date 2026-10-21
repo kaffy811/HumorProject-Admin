@@ -68,9 +68,12 @@ export default async function Ai() {
             series={[{ key: "Completed", color: "var(--series-1)", pick: (d) => d.completed }, { key: "Failed", color: "var(--series-2)", pick: (d) => d.failed }]} />
         </div>
         <div className="card">
-          <h2>Which candidate wins?</h2>
-          <p className="sub">Position of the AI caption members published, out of the four offered.</p>
-          <Bars rows={[...s.picks.map((value, i) => ({ label: `Caption #${i + 1}`, value })), { label: "Rewritten", value: s.edited, tip: `Rewritten before publishing: ${s.edited}` }]} />
+          <h2>Which style do members pick?</h2>
+          <p className="sub">Each run offers four captions in four different styles. Pick rate = chosen ÷ offered, for posts published without rewriting.</p>
+          {s.styleWins.length ? (
+            <Bars rows={s.styleWins.map((w) => ({ label: w.style, value: w.rate * 100, tip: `${w.style}: picked ${w.picked} of ${w.offered} times offered` }))} format={(v) => `${Math.round(v)}%`} />
+          ) : <p className="empty">No published AI posts yet.</p>}
+          <p className="muted" style={{ margin: "12px 0 0", fontSize: 12.5 }}>{n(s.matched)} published as generated · {n(s.edited)} rewritten first.</p>
         </div>
       </section>
 

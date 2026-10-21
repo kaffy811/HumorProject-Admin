@@ -123,7 +123,8 @@ const ai = computeAiStats({
 assert.equal(ai.totals.runs, 4);
 assert.equal(ai.totals.published, 2, "only the latest completed run per photo counts as published");
 assert.equal(ai.totals.providers, 2);
-assert.deepEqual(ai.picks, [0, 0, 1, 0], "x1 matched candidate #3 of g2");
+assert.equal(ai.matched, 1, "x1 matched a candidate of g2 (its latest run)");
+assert.deepEqual(ai.styleWins.map((s) => [s.style, s.offered, s.picked]), [["Pun", 4, 1]]);
 assert.equal(ai.edited, 1);
 assert.equal(ai.regenerations, 1.5);
 const gemini = ai.models.find((m) => m.model === "gemini-x")!;
