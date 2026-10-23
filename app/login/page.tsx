@@ -18,11 +18,11 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
         </div>
         <h1>Staff only, sweetie.</h1>
         <p className="muted" style={{ margin: 0 }}>
-          Sign in with Google. Superadmins go straight in; everyone else can ask for access.
+          Sign in with Google. Admins go straight in; everyone else can ask for access.
         </p>
         {error && ERRORS[error] && <div className="notice notice-bad" role="alert">{ERRORS[error]}</div>}
         <GoogleButton next={next} />
-        <p className="muted" style={{ margin: 0, fontSize: 12 }}>Every page and action checks <span className="mono">profiles.is_superadmin = true</span>.</p>
+        <p className="muted" style={{ margin: 0, fontSize: 12 }}>Every page and action checks <span className="mono">profiles.is_superadmin</span> or <span className="mono">profiles.is_admin = true</span>.</p>
       </div>
     </main>
   );

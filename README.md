@@ -14,9 +14,18 @@ Superadmin console for **The Humor Project**. Source: [kaffy811/HumorProject-Adm
 | `/activity` | **Activity log**: every sign-in/out, signup, upload, AI generation, publish/edit/delete/restore/purge, Ha/un-Ha, comment/reply, heart, save, report, profile change and superadmin request/decision, with category tabs, action/member/time filters and links. Recorded by database triggers (`202610220002`), so the member site and this console are both covered; admin edits are credited to the admin. Each user page shows their latest actions. |
 | `/rankings/ratings`, `/rankings/votes`, `/rankings/hearts` (old `/votes` redirects) | **Read** votes, now inside Rankings & votes: per-post ratings (Ha, downvotes, net, Ha/day, Wilson confidence, comments — sortable), every Ha vote, every comment heart. |
 
+## Roles
+
+| Role | Flag | Can |
+| --- | --- | --- |
+| Superadmin | `profiles.is_superadmin` | Everything, plus **Team & access** (`/team`): approve or decline requests, remove admins. Set only in SQL by the database owner, so the owner can never be locked out. |
+| Admin | `profiles.is_admin` | Everything except team management. Granted by approving a request; a superadmin can remove it any time (effective on their next request). |
+
+Migration `202610230001_admin_roles.sql` adds `is_admin`, makes approvals grant admin, adds `humor_revoke_admin()` (superadmin-only, cannot touch superadmins, also closes their pending request) and logs grants/removals in the activity log. People who previously became superadmins through an approved request are converted to admins; whoever approved requests stays superadmin.
+
 ## Security model
 
-* Every route except `/login`, `/denied` and `/auth/*` is behind Google sign-in **and** `profiles.is_superadmin = true`.
+* Every route except `/login`, `/denied` and `/auth/*` is behind Google sign-in **and** `profiles.is_superadmin = true` or `profiles.is_admin = true`; `/team` and its actions need `is_superadmin`.
 * Three independent checks: `proxy.ts` (all requests, fails closed), `requireAdmin()` in every page/layout, and `requireAdmin()` again inside every Server Action (actions are reachable by direct POST).
 * A session only counts if it is a fresh Google OAuth session (same `amr` rules as the member app); password/magic-link sessions are refused. The flag must be strictly boolean `true`.
 * The service-role key is server-only and is used only after the gate. Private images are shown with 10-minute signed URLs. Pages are `private, no-store`, `noindex`, and cannot be framed.

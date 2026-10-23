@@ -1,6 +1,6 @@
 // Pure unit tests: no network, no database.
 import assert from "node:assert/strict";
-import { gateDecision, isPublicPath, safeNext } from "../lib/gate";
+import { consoleRole, gateDecision, isPublicPath, safeNext } from "../lib/gate";
 import { computeStats } from "../lib/stats";
 import { parseMediaFields, sniffImage } from "../lib/media-rules";
 import { tokenCount } from "../lib/format";
@@ -16,6 +16,11 @@ assert.equal(gateDecision(google, claims, { is_superadmin: false }), "forbidden"
 assert.equal(gateDecision(google, claims, null), "forbidden");
 assert.equal(gateDecision(google, claims, { is_superadmin: "true" }), "forbidden");
 assert.equal(gateDecision(google, claims, { is_superadmin: 1 }), "forbidden");
+assert.equal(gateDecision(google, claims, { is_superadmin: false, is_admin: true }), "admin", "admins get in");
+assert.equal(gateDecision(google, claims, { is_admin: "true" }), "forbidden");
+assert.equal(consoleRole({ is_superadmin: true, is_admin: true }), "superadmin");
+assert.equal(consoleRole({ is_superadmin: false, is_admin: true }), "admin");
+assert.equal(consoleRole({ is_superadmin: null }), null, "missing is_admin column reads as no role");
 assert.equal(gateDecision(google, { sub: id, amr: [{ method: "password", timestamp: 10 }] }, { is_superadmin: true }), "not-google");
 assert.equal(gateDecision(google, { sub: "someone-else", amr: claims.amr }, { is_superadmin: true }), "not-google");
 assert.equal(gateDecision({ ...(google as object), identities: [{ provider: "email" }] } as never, claims, { is_superadmin: true }), "not-google");

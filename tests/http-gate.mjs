@@ -8,8 +8,10 @@ import { spawn } from "node:child_process";
 const SUPA_PORT = 54399, APP_PORT = 3011;
 const ADMIN = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const MEMBER = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const HELPER = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const profiles = [
   { id: ADMIN, username: "boss", first_name: "Big", last_name: "Boss", display_name: null, avatar_path: null, created_at: "2026-10-01T00:00:00Z", onboarded_at: "2026-10-01T00:00:00Z", is_official: false, is_superadmin: true },
+  { id: HELPER, username: "helper", first_name: "Team", last_name: "Admin", display_name: null, avatar_path: null, created_at: "2026-10-03T00:00:00Z", onboarded_at: "2026-10-03T00:00:00Z", is_official: false, is_superadmin: false, is_admin: true },
   { id: MEMBER, username: "member", first_name: "Plain", last_name: "Member", display_name: null, avatar_path: null, created_at: "2026-10-02T00:00:00Z", onboarded_at: null, is_official: false, is_superadmin: false },
 ];
 const b64 = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -61,7 +63,7 @@ app.stdout.on("data", (d) => (log += d)); app.stderr.on("data", (d) => (log += d
 try {
   for (let i = 0; i < 60 && !log.includes("Ready"); i++) await new Promise((r) => setTimeout(r, 500));
   const get = (path, headers = {}) => fetch(`http://127.0.0.1:${APP_PORT}${path}`, { redirect: "manual", headers });
-  for (const path of ["/", "/users", "/users/" + MEMBER, "/posts", "/posts?source=handmade", "/posts/new", "/ai", "/ai/runs", "/requests", "/rankings/posts?period=week", "/rankings/creators", "/rankings/most-posts", "/rankings/topics", "/rankings/ratings?sort=net", "/activity?action=cat:auth", "/activity?action=ha&from=2026-10-01T00:00&to=2026-10-21T23:59"]) {
+  for (const path of ["/", "/users", "/users/" + MEMBER, "/posts", "/posts?source=handmade", "/posts/new", "/ai", "/ai/runs", "/team", "/rankings/posts?period=week", "/rankings/creators", "/rankings/most-posts", "/rankings/topics", "/rankings/ratings?sort=net", "/activity?action=cat:auth", "/activity?action=ha&from=2026-10-01T00:00&to=2026-10-21T23:59"]) {
     const anon = await get(path);
     assert.equal(anon.status, 307, `anonymous ${path}`);
     assert.match(anon.headers.get("location"), /\/login/);
@@ -78,10 +80,16 @@ try {
   assert.match(dash, /actually funny/);
   const users = await (await get("/users", { cookie: cookie(ADMIN) })).text();
   assert.match(users, /@member/); assert.match(users, /Superadmin/);
+  // Admins use the console but not team management.
+  for (const path of ["/", "/posts", "/activity", "/rankings/posts"]) assert.equal((await get(path, { cookie: cookie(HELPER) })).status, 200, `admin ${path}`);
+  const team = await get("/team", { cookie: cookie(HELPER) });
+  assert.match(team.headers.get("location") || "", /notice=superadmin-only/, "admins cannot open Team & access");
+  assert.equal((await get("/team", { cookie: cookie(ADMIN) })).status, 200);
+  assert.match((await get("/requests", { cookie: cookie(ADMIN) })).headers.get("location") || "", /\/team$/);
   const denied = await (await get("/denied?reason=forbidden", { cookie: cookie(MEMBER) })).text();
-  assert.match(denied, /Request superadmin access/, "non-admins get a request button");
+  assert.match(denied, /Request admin access/, "non-admins get a request button");
   const anonDenied = await (await get("/denied?reason=forbidden")).text();
-  assert.doesNotMatch(anonDenied, /Request superadmin access/, "signed-out visitors cannot request");
+  assert.doesNotMatch(anonDenied, /Request admin access/, "signed-out visitors cannot request");
   const api = await get("/api/anything", { cookie: cookie(MEMBER) });
   assert.equal(api.status, 403);
   const moved = await get("/media/new", { cookie: cookie(ADMIN) });
@@ -94,7 +102,7 @@ try {
   // A forged Server Action POST from a non-admin is stopped by the proxy before any action runs.
   const action = await fetch(`http://127.0.0.1:${APP_PORT}/posts/new`, { method: "POST", redirect: "manual", headers: { cookie: cookie(MEMBER), "next-action": "x", origin: `http://127.0.0.1:${APP_PORT}` }, body: "x" });
   assert.equal(action.status, 307);
-  console.log("PASS anonymous → /login, members and non-Google sessions → /denied, superadmin pages render, members can request access, actions blocked for non-admins.");
+  console.log("PASS anonymous → /login, members and non-Google sessions → /denied, superadmins see everything, admins everything but team management, members can request access, actions blocked for non-admins.");
 } finally {
   process.kill(-app.pid); supa.close();
 }

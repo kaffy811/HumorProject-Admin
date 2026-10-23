@@ -6,7 +6,7 @@ import { dataSchema } from "@/lib/supabase/schema";
 import { gateDecision, isPublicPath } from "@/lib/gate";
 
 // First wall: every non-public route needs a Google session whose profile has
-// is_superadmin = true. Pages and Server Actions re-check with requireAdmin().
+// is_superadmin = true or is_admin = true. Pages and Server Actions re-check with requireAdmin().
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   let response = NextResponse.next({ request });
@@ -46,7 +46,7 @@ export async function proxy(request: NextRequest) {
         db: { schema: dataSchema() },
         auth: { persistSession: false, autoRefreshToken: false },
       });
-      const { data, error } = await admin.from("profiles").select("is_superadmin").eq("id", user.id).maybeSingle();
+      const { data, error } = await admin.from("profiles").select("*").eq("id", user.id).maybeSingle();
       if (error) return deny("/denied?reason=unavailable", 503, "Admin permissions could not be checked.");
       profile = data;
     }

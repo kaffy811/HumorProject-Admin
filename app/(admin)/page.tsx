@@ -10,9 +10,10 @@ import { TopicTable } from "@/components/TopicTable";
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const hour = (h: number) => (h === 0 ? "midnight" : h < 12 ? `${h} AM` : h === 12 ? "noon" : `${h - 12} PM`);
 
-export default async function Dashboard() {
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ notice?: string }> }) {
   const admin = await requireAdmin();
-  const [s, pending, board, posters, topics] = await Promise.all([dashboardStats(), pendingRequestCount(), leaderboard("all", admin.id), mostPosts(), topicStats()]);
+  const { notice } = await searchParams;
+  const [s, pending, board, posters, topics] = await Promise.all([dashboardStats(), admin.role === "superadmin" ? pendingRequestCount() : null, leaderboard("all", admin.id), mostPosts(), topicStats()]);
   const t = s.totals;
   const bestStyle = s.styles.find((style) => style.posts >= 2) ?? s.styles[0];
   const bestLength = [...s.lengths].filter((l) => l.posts).sort((a, b) => b.average - a.average)[0];
@@ -27,10 +28,11 @@ export default async function Dashboard() {
         <Link className="btn btn-primary" href="/posts/new">+ New post</Link>
       </header>
 
+      {notice === "superadmin-only" && <div className="notice notice-bad" role="alert">Team &amp; access is for superadmins only.</div>}
       {!!pending && (
         <div className="notice notice-warn notice-row" role="status">
-          <span>✉ {pending} {pending === 1 ? "member is" : "members are"} waiting for superadmin approval.</span>
-          <Link className="btn btn-primary" href="/requests">Review requests</Link>
+          <span>✉ {pending} {pending === 1 ? "member is" : "members are"} asking for admin access.</span>
+          <Link className="btn btn-primary" href="/team">Review requests</Link>
         </div>
       )}
 
@@ -65,7 +67,7 @@ export default async function Dashboard() {
       </section>
 
       <section className="grid grid-kpi" aria-label="Totals">
-        <Kpi label="Members" value={t.members} note={`${n(t.onboarded)} finished onboarding · ${n(t.superadmins)} superadmin`} />
+        <Kpi label="Members" value={t.members} note={`${n(t.onboarded)} onboarded · ${n(t.superadmins)} superadmin · ${n(t.admins)} admin`} />
         <Kpi label="Live posts" value={t.livePosts} note={`${n(t.deletedPosts)} deleted`} />
         <Kpi label="Ha votes" value={t.ha} note={t.boos ? `${n(t.boos)} downvotes` : "No downvotes recorded"} />
         <Kpi label="Comments" value={t.comments} note={`${n(t.commentHearts)} hearts on ${n(t.heartedComments)} comments`} />

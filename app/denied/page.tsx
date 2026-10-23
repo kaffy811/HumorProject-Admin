@@ -5,7 +5,7 @@ import { googleMember, latestRequest } from "@/lib/requests";
 import { when } from "@/lib/format";
 export const metadata: Metadata = { title: "Access denied" };
 const COPY: Record<string, string> = {
-  forbidden: "You're signed in, but this account isn't a superadmin yet.",
+  forbidden: "You're signed in, but this account doesn't have admin access yet.",
   "not-google": "Only Google sign-in is accepted here. Sign out and continue with Google.",
   unavailable: "Admin permissions could not be checked, so access is closed. Try again shortly.",
 };
@@ -18,7 +18,7 @@ export default async function Denied({ searchParams }: { searchParams: Promise<{
       <div className="card login-card">
         {/* eslint-disable-next-line @next/next/no-img-element -- static mascot */}
         <img className="login-mascot" src={request?.status === "pending" ? "/baby/thinking.webp" : "/baby/pout.webp"} alt="" />
-        <span className="badge badge-bad" style={{ justifySelf: "center" }}>Superadmins only</span>
+        <span className="badge badge-bad" style={{ justifySelf: "center" }}>Admins only</span>
         <h1>Nice try, bestie.</h1>
         <p className="muted" style={{ margin: 0 }}>{COPY[reason] ?? COPY.forbidden}</p>
         {user?.email && <p style={{ margin: 0, fontSize: 13 }}>Signed in as <b>{user.email}</b></p>}

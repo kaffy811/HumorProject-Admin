@@ -10,8 +10,8 @@ export const ACTIONS: Record<string, string> = {
   comment: "Commented", reply: "Replied to a comment", delete_comment: "Deleted a comment",
   save: "Saved a post", unsave: "Unsaved a post", report_post: "Reported a post", report_comment: "Reported a comment",
   onboard: "Finished onboarding", update_profile: "Updated their profile",
-  request_superadmin: "Requested superadmin access", approve_request: "Approved a superadmin request", reject_request: "Declined a superadmin request",
-  grant_superadmin: "Became a superadmin", revoke_superadmin: "Lost superadmin access",
+  request_superadmin: "Requested admin access", approve_request: "Approved an access request", reject_request: "Declined an access request",
+  grant_superadmin: "Made superadmin", revoke_superadmin: "Superadmin removed", grant_admin: "Made admin", revoke_admin: "Admin access removed",
 };
 export const describe = (action: string) => ACTIONS[action] ?? action.replace(/_/g, " ");
 // Short human detail for a log row's JSON payload.

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await db.auth.getUser();
     const { data: claims } = user ? await db.auth.getClaims() : { data: null };
     const { data: profile, error } = user
-      ? await serviceClient().from("profiles").select("is_superadmin").eq("id", user.id).maybeSingle()
+      ? await serviceClient().from("profiles").select("*").eq("id", user.id).maybeSingle()
       : { data: null, error: null };
     if (error) return go("/denied?reason=unavailable");
     const result = gateDecision(user, claims?.claims, profile);

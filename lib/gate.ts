@@ -2,17 +2,26 @@ import type { User } from "@supabase/supabase-js";
 import { isGoogleSession } from "./google-session";
 
 export type GateResult = "anonymous" | "not-google" | "forbidden" | "admin";
+export type ConsoleRole = "superadmin" | "admin";
+type RoleFlags = { is_superadmin?: unknown; is_admin?: unknown } | null;
+
+// Superadmin = owner (team management); admin = everything else in the console.
+// Flags must be strictly TRUE; null, missing or "true" strings never pass.
+export function consoleRole(profile: RoleFlags): ConsoleRole | null {
+  if (profile?.is_superadmin === true) return "superadmin";
+  if (profile?.is_admin === true) return "admin";
+  return null;
+}
 
 // Pure decision so the proxy, pages, actions and tests all agree.
-// The flag must be strictly TRUE; null, missing or "true" strings never pass.
 export function gateDecision(
   user: Pick<User, "id" | "identities" | "is_anonymous"> | null,
   claims: unknown,
-  profile: { is_superadmin?: unknown } | null,
+  profile: RoleFlags,
 ): GateResult {
   if (!user) return "anonymous";
   if (!isGoogleSession(user, claims)) return "not-google";
-  return profile?.is_superadmin === true ? "admin" : "forbidden";
+  return consoleRole(profile) ? "admin" : "forbidden";
 }
 
 export const PUBLIC_PATHS = ["/login", "/denied"];

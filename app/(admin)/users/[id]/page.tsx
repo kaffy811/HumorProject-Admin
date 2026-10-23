@@ -6,11 +6,12 @@ import { serviceClient } from "@/lib/supabase/service";
 import { day, fullName, handle, n, when } from "@/lib/format";
 import type { ProfileRow } from "@/lib/stats";
 import { recentActivity } from "@/lib/activity-data";
+import { RemoveAdmin } from "@/components/RemoveAdmin";
 import { CATEGORIES, describe, detailText } from "@/lib/activity";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export default async function UserDetail({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
+  const me = await requireAdmin();
   const { id } = await params;
   if (!UUID.test(id)) notFound();
   const db = serviceClient();
@@ -57,7 +58,8 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
           </div>
         </div>
         <span style={{ display: "flex", gap: 6 }}>
-          {profile.is_superadmin && <span className="badge badge-brand">Superadmin</span>}
+          {profile.is_superadmin ? <span className="badge badge-brand">Superadmin</span> : profile.is_admin && <span className="badge">Admin</span>}
+          {me.role === "superadmin" && !profile.is_superadmin && profile.is_admin && <RemoveAdmin id={profile.id} name={handle(profile)} />}
           {profile.is_official && <span className="badge">Official</span>}
           {profile.onboarded_at ? <span className="badge badge-good">Onboarded</span> : <span className="badge badge-warn">Onboarding incomplete</span>}
         </span>
@@ -80,6 +82,7 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
             <dt>Avatar path</dt><dd className="mono">{profile.avatar_path ?? "—"}</dd>
             <dt>Onboarded</dt><dd>{when(profile.onboarded_at)}</dd>
             <dt>is_superadmin</dt><dd className="mono">{String(profile.is_superadmin)}</dd>
+            <dt>is_admin</dt><dd className="mono">{String(profile.is_admin ?? false)}</dd>
             <dt>is_official</dt><dd className="mono">{String(profile.is_official)}</dd>
           </dl>
         </div>

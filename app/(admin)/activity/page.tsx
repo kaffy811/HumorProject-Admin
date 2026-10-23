@@ -94,7 +94,7 @@ export default async function Activity({ searchParams }: { searchParams: Search 
                     <b>{describe(r.action)}</b>
                     {r.via === "admin" && <> <span className="badge badge-brand">via admin</span></>}
                     {r.detail.backfilled === true && <> <span className="badge" title="Reconstructed from existing data when logging started">history</span></>}
-                    {owner && <div className="muted" style={{ fontSize: 12 }}>on {people.get(owner)?.username ? `@${people.get(owner)!.username}` : "a member"}&apos;s post</div>}
+                    {owner && <div className="muted" style={{ fontSize: 12 }}>{r.category === "admin" || r.category === "profile" ? "for" : "on"} {people.get(owner)?.username ? `@${people.get(owner)!.username}` : "a member"}{r.category === "admin" || r.category === "profile" ? "" : "\u2019s post"}</div>}
                     {member && <div className="muted" style={{ fontSize: 12 }}>for {people.get(member)?.username ? `@${people.get(member)!.username}` : "a member"}</div>}
                   </td>
                   <td className="muted"><span className="clip">{detailText(r.action, r.detail)}</span></td>
@@ -119,7 +119,7 @@ const ACTION_CATEGORY: Record<string, string> = {
   comment: "comment", reply: "comment", delete_comment: "comment",
   save: "save", unsave: "save", report_post: "report", report_comment: "report",
   onboard: "profile", update_profile: "profile",
-  request_superadmin: "admin", approve_request: "admin", reject_request: "admin", grant_superadmin: "admin", revoke_superadmin: "admin",
+  request_superadmin: "admin", approve_request: "admin", reject_request: "admin", grant_superadmin: "admin", revoke_superadmin: "admin", grant_admin: "admin", revoke_admin: "admin",
 };
 
 function Head() {

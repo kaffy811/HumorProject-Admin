@@ -13,12 +13,13 @@ export default async function Users({ searchParams }: { searchParams: Search }) 
   await requireAdmin();
   const params = await searchParams;
   const q = searchTerm(text(params.q));
-  const role = ["superadmin", "official", "incomplete"].includes(text(params.role)) ? text(params.role) : "";
+  const role = ["superadmin", "admin", "official", "incomplete"].includes(text(params.role)) ? text(params.role) : "";
   const page = clampPage(params.page);
   const db = serviceClient();
   let query = db.from("profiles").select(PROFILE_COLUMNS, { count: "exact" }).order("created_at", { ascending: false });
   if (q) query = query.or(`username.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,display_name.ilike.%${q}%`);
   if (role === "superadmin") query = query.eq("is_superadmin", true);
+  if (role === "admin") query = query.eq("is_admin", true).eq("is_superadmin", false);
   if (role === "official") query = query.eq("is_official", true);
   if (role === "incomplete") query = query.is("onboarded_at", null);
   const { data, count, error } = await query.range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
@@ -51,6 +52,7 @@ export default async function Users({ searchParams }: { searchParams: Search }) 
         <select className="select" name="role" defaultValue={role} aria-label="Filter">
           <option value="">All accounts</option>
           <option value="superadmin">Superadmins</option>
+          <option value="admin">Admins</option>
           <option value="official">Official accounts</option>
           <option value="incomplete">Onboarding incomplete</option>
         </select>
@@ -72,7 +74,7 @@ export default async function Users({ searchParams }: { searchParams: Search }) 
                   <td className="muted">{account?.email ?? "—"}</td>
                   <td>
                     <span style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                      {row.is_superadmin && <span className="badge badge-brand">Superadmin</span>}
+                      {row.is_superadmin ? <span className="badge badge-brand">Superadmin</span> : row.is_admin && <span className="badge">Admin</span>}
                       {row.is_official && <span className="badge">Official</span>}
                       {row.onboarded_at ? <span className="badge badge-good">Onboarded</span> : <span className="badge badge-warn">Incomplete</span>}
                       {account?.banned && <span className="badge badge-bad">Banned</span>}

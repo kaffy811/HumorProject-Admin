@@ -5,7 +5,8 @@ import { computeStats, type CaptionRow, type ProfileRow } from "./stats";
 import { computeAiStats, type AiCaptionRow, type GenerationRow, type ModerationRow } from "./ai-stats";
 
 export const PAGE_SIZE = 25;
-const PROFILE_COLUMNS = "id,username,first_name,last_name,display_name,avatar_path,created_at,onboarded_at,is_official,is_superadmin";
+// "*" keeps working before and after role columns are added.
+const PROFILE_COLUMNS = "*";
 
 // Reads a whole table in 1,000-row pages (PostgREST's default cap).
 export async function fetchAll<T>(db: ServiceClient, table: string, columns: string, limit = 50_000): Promise<T[]> {

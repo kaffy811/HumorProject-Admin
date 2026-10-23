@@ -1,6 +1,6 @@
 import { dateKey, median, slot, tokenCount } from "./format";
 
-export type ProfileRow = { id: string; username: string | null; first_name: string | null; last_name: string | null; display_name: string | null; avatar_path: string | null; created_at: string; onboarded_at: string | null; is_official: boolean; is_superadmin: boolean };
+export type ProfileRow = { id: string; username: string | null; first_name: string | null; last_name: string | null; display_name: string | null; avatar_path: string | null; created_at: string; onboarded_at: string | null; is_official: boolean; is_superadmin: boolean; is_admin?: boolean };
 export type ImageRow = { id: string; user_id: string; status: string; created_at: string; storage_path: string | null };
 export type CaptionRow = { id: string; image_id: string; content: string; style: string; source: string; created_at: string; deleted_at: string | null };
 export type VoteRow = { user_id: string; caption_id: string; value: number; created_at: string };
@@ -120,6 +120,7 @@ export function computeStats(input: StatsInput) {
       members: input.profiles.filter((p) => !p.is_official).length,
       onboarded: input.profiles.filter((p) => !p.is_official && p.onboarded_at).length,
       superadmins: input.profiles.filter((p) => p.is_superadmin).length,
+      admins: input.profiles.filter((p) => !p.is_superadmin && p.is_admin === true).length,
       livePosts: live.length,
       deletedPosts: input.captions.filter((c) => c.deleted_at).length,
       ha: ha.length,
