@@ -114,7 +114,7 @@ type Day = { date: string; ha: number; posts: number; comments: number };
 export function Trend({ days }: { days: Day[] }) {
   return (
     <Lines days={days} label="Daily activity over the last 30 days"
-      series={[{ key: "Ha votes", color: "var(--series-1)", pick: (d) => d.ha }, { key: "Posts + comments", color: "var(--series-2)", pick: (d) => d.posts + d.comments }]}
-      describe={(d) => `${d.ha} Ha · ${d.posts} posts · ${d.comments} comments`} />
+      series={[{ key: "Likes", color: "var(--series-1)", pick: (d) => d.ha }, { key: "Posts + comments", color: "var(--series-2)", pick: (d) => d.posts + d.comments }]}
+      describe={(d) => `${d.ha} likes · ${d.posts} posts · ${d.comments} comments`} />
   );
 }

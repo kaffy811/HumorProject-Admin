@@ -35,10 +35,10 @@ export default async function Ai() {
 
       <section className="card">
         <h2>Models</h2>
-        <p className="sub">One row per provider + model. Ha/post counts only live posts that came from that model.</p>
+        <p className="sub">One row per provider + model. likes/post counts only live posts that came from that model.</p>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Provider</th><th>Model</th><th className="r">Runs</th><th className="r">Success</th><th className="r">Tokens / run</th><th className="r">Median</th><th className="r">p90</th><th className="r">Published</th><th className="r">Ha / post</th><th>Last used</th></tr></thead>
+            <thead><tr><th>Provider</th><th>Model</th><th className="r">Runs</th><th className="r">Success</th><th className="r">Tokens / run</th><th className="r">Median</th><th className="r">p90</th><th className="r">Published</th><th className="r">Likes / post</th><th>Last used</th></tr></thead>
             <tbody>
               {s.models.map((m) => (
                 <tr key={m.provider + m.model}>
@@ -128,7 +128,7 @@ export default async function Ai() {
                   <b className="mono" style={{ fontSize: 14 }}>{v.version}</b>
                   <span className="badge">{n(v.runs)} runs</span>
                   <span className="badge badge-good">{pct(v.completed, v.runs)} success</span>
-                  <span className="badge">{n(v.published)} posts · {v.haPerPost.toFixed(2)} Ha/post</span>
+                  <span className="badge">{n(v.published)} posts · {v.haPerPost.toFixed(2)} likes/post</span>
                   <span className="muted">{day(v.firstSeen)} – {day(v.lastSeen)} · {v.models.join(", ")}</span>
                 </summary>
                 {p ? (

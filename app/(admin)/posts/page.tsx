@@ -82,7 +82,7 @@ export default async function Media({ searchParams }: { searchParams: Search }) 
       </form>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Image</th><th>Caption</th><th>Author</th><th>Style · source</th><th className="r">Ha</th><th className="r">Comments</th><th>Status</th><th>Posted</th></tr></thead>
+          <thead><tr><th>Image</th><th>Caption</th><th>Author</th><th>Style · source</th><th className="r">Likes</th><th className="r">Comments</th><th>Status</th><th>Posted</th></tr></thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.id}>

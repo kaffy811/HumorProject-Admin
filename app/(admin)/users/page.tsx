@@ -30,11 +30,12 @@ export default async function Users({ searchParams }: { searchParams: Search }) 
     authUsers(db),
     signedUrls(db, "humor-avatars", rows.map((row) => row.avatar_path)),
     Promise.all(ids.map(async (id) => {
-      const [posts, given] = await Promise.all([
+      const [posts, given, disliked] = await Promise.all([
         db.from("humor_images").select("id", { count: "exact", head: true }).eq("user_id", id).eq("status", "ready"),
         db.from("humor_votes").select("id", { count: "exact", head: true }).eq("user_id", id).eq("value", 1),
+        db.from("humor_votes").select("id", { count: "exact", head: true }).eq("user_id", id).eq("value", -1),
       ]);
-      return [id, { posts: posts.count ?? 0, given: given.count ?? 0 }] as const;
+      return [id, { posts: posts.count ?? 0, given: given.count ?? 0, disliked: disliked.count ?? 0 }] as const;
     })),
   ]);
   const tally = new Map(counts);
@@ -61,7 +62,7 @@ export default async function Users({ searchParams }: { searchParams: Search }) 
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>Member</th><th>Email</th><th>Status</th><th className="r">Posts</th><th className="r">Ha given</th><th>Joined</th><th>Last sign-in</th></tr>
+            <tr><th>Member</th><th>Email</th><th>Status</th><th className="r">Posts</th><th className="r">Likes given</th><th className="r">Dislikes given</th><th>Joined</th><th>Last sign-in</th></tr>
           </thead>
           <tbody>
             {rows.map((row) => {
@@ -82,12 +83,13 @@ export default async function Users({ searchParams }: { searchParams: Search }) 
                   </td>
                   <td className="r num">{n(tally.get(row.id)?.posts ?? 0)}</td>
                   <td className="r num">{n(tally.get(row.id)?.given ?? 0)}</td>
+                  <td className="r num">{n(tally.get(row.id)?.disliked ?? 0)}</td>
                   <td className="muted">{day(row.created_at)}</td>
                   <td className="muted">{when(account?.lastSignIn)}</td>
                 </tr>
               );
             })}
-            {!rows.length && <tr><td colSpan={7} className="empty">No users match.</td></tr>}
+            {!rows.length && <tr><td colSpan={8} className="empty">No users match.</td></tr>}
           </tbody>
         </table>
       </div>

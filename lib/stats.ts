@@ -59,7 +59,7 @@ export function computeStats(input: StatsInput) {
   ha.forEach((vote) => bump(vote.created_at, "ha"));
   liveComments.forEach((comment) => bump(comment.created_at, "comments"));
 
-  // When campus laughs: Ha votes + comment hearts by weekday × hour.
+  // When campus laughs: Likes + comment hearts by weekday × hour.
   const heatmap = Array.from({ length: 7 }, () => Array(24).fill(0) as number[]);
   for (const event of [...ha.map((v) => v.created_at), ...input.commentVotes.map((v) => v.created_at)]) {
     const { weekday, hour } = slot(event);

@@ -41,7 +41,7 @@ async function liveContent() {
   return { db, posts };
 }
 
-// Most posts: live posts, then Ha received, then whoever posted most recently.
+// Most posts: live posts, then Likes received, then whoever posted most recently.
 export async function mostPosts() {
   const { db, posts } = await liveContent();
   const by = new Map<string, { id: string; posts: number; ha: number; latest: string }>();

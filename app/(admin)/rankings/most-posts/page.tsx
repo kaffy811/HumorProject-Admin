@@ -15,13 +15,13 @@ export default async function MostPosts() {
         <div>
           <span className="eyebrow">Rankings</span>
           <h1>Most posts.</h1>
-          <p>Members ranked by how many live posts they have, all time. When tied, more Ha received ranks higher, then whoever posted most recently.</p>
+          <p>Members ranked by how many live posts they have, all time. When tied, more Likes received ranks higher, then whoever posted most recently.</p>
         </div>
       </header>
       <RankTabs current="/rankings/most-posts" />
       <div className="table-wrap">
         <table>
-          <thead><tr><th className="r">Rank</th><th>Member</th><th className="r">Live posts</th><th className="r">Ha received</th><th className="r">Ha / post</th><th>Latest post</th></tr></thead>
+          <thead><tr><th className="r">Rank</th><th>Member</th><th className="r">Live posts</th><th className="r">Likes received</th><th className="r">Likes / post</th><th>Latest post</th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>

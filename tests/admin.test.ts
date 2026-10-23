@@ -157,7 +157,8 @@ assert.equal(classify("The local students handed their finals in forty minutes e
 assert.equal(classify("A cat in a banana costume").topic, "other");
 assert.equal(classify("Parent orientation").topic, "other", "'rent' must not match inside 'parent'");
 assert.equal(classify("Pigeons own this city").topic, "nyc", "plural keywords match");
-assert.equal(describeAction("ha"), "Gave a Ha");
+assert.equal(describeAction("dislike"), "Disliked a post");
+assert.equal(detailText("like", { switchedFrom: "dislike" }), "switched from dislike");
 assert.equal(detailText("login", { userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit Version/17 Safari/605" }), "Safari on macOS");
 assert.equal(detailText("edit", { caption: "new", before: "old" }), "“new” · was “old”");
 console.log("PASS topics and activity descriptions.");

@@ -63,7 +63,7 @@ app.stdout.on("data", (d) => (log += d)); app.stderr.on("data", (d) => (log += d
 try {
   for (let i = 0; i < 60 && !log.includes("Ready"); i++) await new Promise((r) => setTimeout(r, 500));
   const get = (path, headers = {}) => fetch(`http://127.0.0.1:${APP_PORT}${path}`, { redirect: "manual", headers });
-  for (const path of ["/", "/users", "/users/" + MEMBER, "/posts", "/posts?source=handmade", "/posts/new", "/ai", "/ai/runs", "/team", "/rankings/posts?period=week", "/rankings/creators", "/rankings/most-posts", "/rankings/topics", "/rankings/ratings?sort=net", "/activity?action=cat:auth", "/activity?action=ha&from=2026-10-01T00:00&to=2026-10-21T23:59"]) {
+  for (const path of ["/", "/users", "/users/" + MEMBER, "/posts", "/posts?source=handmade", "/posts/new", "/ai", "/ai/runs", "/team", "/rankings/posts?period=week", "/rankings/creators", "/rankings/most-posts", "/rankings/topics", "/rankings/ratings?sort=net", "/activity?action=cat:auth", "/activity?action=dislike&from=2026-10-01T00:00&to=2026-10-21T23:59"]) {
     const anon = await get(path);
     assert.equal(anon.status, 307, `anonymous ${path}`);
     assert.match(anon.headers.get("location"), /\/login/);
@@ -95,7 +95,7 @@ try {
   const moved = await get("/media/new", { cookie: cookie(ADMIN) });
   assert.match(moved.headers.get("location") || "", /\/posts\/new$/, "old /media links redirect to /posts");
   const votes = await get("/votes?tab=ha", { cookie: cookie(ADMIN) });
-  assert.match(votes.headers.get("location") || "", /\/activity\?action=ha$/, "old vote links open the activity log");
+  assert.match(votes.headers.get("location") || "", /\/activity\?action=cat:reaction$/, "old vote links open the activity log");
   const login = await get("/login");
   assert.equal(login.status, 200);
   assert.equal(login.headers.get("x-robots-tag"), "noindex, nofollow");

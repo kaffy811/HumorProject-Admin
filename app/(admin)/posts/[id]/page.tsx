@@ -62,7 +62,7 @@ export default async function MediaDetail({ params, searchParams }: { params: Pr
             {image.storage_path && urls[image.storage_path] ? <img src={urls[image.storage_path]} alt={image.description ?? "Post image"} className="media-preview" /> : <div className="empty">Image unavailable.</div>}
             <dl className="kv" style={{ marginTop: 14 }}>
               <dt>Author</dt><dd><PersonLink profile={people.get(image.user_id) ?? null} id={image.user_id} /></dd>
-              <dt>Ha / downvotes</dt><dd className="num">{n(ha)} / {n(voteRows.length - ha)}</dd>
+              <dt>Likes / dislikes</dt><dd className="num">{n(ha)} / {n(voteRows.length - ha)}</dd>
               <dt>Comments</dt><dd className="num">{n(commentRows.filter((c) => !c.deleted_at).length)}</dd>
               <dt>Saves</dt><dd className="num">{n(saves.count ?? 0)}</dd>
               <dt>Reports</dt><dd>{(reports.data ?? []).length ? (reports.data ?? []).map((r) => r.reason).join(", ") : "None"}</dd>
@@ -132,7 +132,7 @@ export default async function MediaDetail({ params, searchParams }: { params: Pr
               <thead><tr><th>Member</th><th>Vote</th><th>When</th></tr></thead>
               <tbody>
                 {voteRows.map((v) => (
-                  <tr key={v.user_id}><td><PersonLink profile={people.get(v.user_id) ?? null} id={v.user_id} /></td><td>{v.value === 1 ? <span className="badge badge-good">Ha +1</span> : <span className="badge badge-bad">−1</span>}</td><td className="muted">{when(v.created_at)}</td></tr>
+                  <tr key={v.user_id}><td><PersonLink profile={people.get(v.user_id) ?? null} id={v.user_id} /></td><td>{v.value === 1 ? <span className="badge badge-good">Like</span> : <span className="badge badge-bad">Dislike</span>}</td><td className="muted">{when(v.created_at)}</td></tr>
                 ))}
                 {!voteRows.length && <tr><td colSpan={3} className="empty">No votes.</td></tr>}
               </tbody>

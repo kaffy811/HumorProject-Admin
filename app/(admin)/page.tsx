@@ -42,16 +42,16 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <img className="hero-mascot" src="/baby/giggle.webp" alt="" />
           <span className="eyebrow">Laugh rate</span>
           <div className="big num">{pct(Math.round(t.laughRate * t.livePosts), t.livePosts)}</div>
-          <p>of live posts have earned at least one Ha. The median post waits <b>{duration(s.medianFirstLaugh)}</b> for its first laugh.</p>
+          <p>of live posts have earned at least one like. The median post waits <b>{duration(s.medianFirstLaugh)}</b> for its first laugh.</p>
           <div className="hero-facts">
-            <div><b className="num">{t.haPerPost.toFixed(1)}</b><span>Ha per post</span></div>
-            <div><b className="num">{n(s.silent)}</b><span>posts met with silence (3+ days, 0 Ha)</span></div>
-            <div><b className="num">{n(s.selfLaughs)}</b><span>self-Ha: members laughing at their own joke</span></div>
+            <div><b className="num">{t.haPerPost.toFixed(1)}</b><span>likes per post</span></div>
+            <div><b className="num">{n(s.silent)}</b><span>posts met with silence (3+ days, 0 likes)</span></div>
+            <div><b className="num">{n(s.selfLaughs)}</b><span>self-likes: members liking their own joke</span></div>
           </div>
         </div>
         <div className="card">
           <h2>Peak comedy hour</h2>
-          <p className="sub">When Ha votes and comment hearts land.</p>
+          <p className="sub">When likes and comment hearts land.</p>
           {s.peak.count ? (
             <>
               <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: -0.6 }}>{DAYS[s.peak.weekday]}s around {hour(s.peak.hour)}</div>
@@ -61,7 +61,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             </>
           ) : <p className="empty">No laughs recorded yet.</p>}
           {bestStyle && (
-            <p style={{ margin: "14px 0 0" }}>Funniest style: <b>{bestStyle.style}</b> at {bestStyle.average.toFixed(2)} Ha per post.{bestLength && <> Best caption length: <b>{bestLength.label.toLowerCase()}</b>.</>}</p>
+            <p style={{ margin: "14px 0 0" }}>Funniest style: <b>{bestStyle.style}</b> at {bestStyle.average.toFixed(2)} likes per post.{bestLength && <> Best caption length: <b>{bestLength.label.toLowerCase()}</b>.</>}</p>
           )}
         </div>
       </section>
@@ -69,7 +69,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <section className="grid grid-kpi" aria-label="Totals">
         <Kpi label="Members" value={t.members} note={`${n(t.onboarded)} onboarded · ${n(t.superadmins)} superadmin · ${n(t.admins)} admin`} />
         <Kpi label="Live posts" value={t.livePosts} note={`${n(t.deletedPosts)} deleted`} />
-        <Kpi label="Ha votes" value={t.ha} note={t.boos ? `${n(t.boos)} downvotes` : "No downvotes recorded"} />
+        <Kpi label="Votes" value={t.ha + t.boos} note={`${n(t.ha)} likes · ${n(t.boos)} dislikes`} />
         <Kpi label="Comments" value={t.comments} note={`${n(t.commentHearts)} hearts on ${n(t.heartedComments)} comments`} />
         <Kpi label="Saves" value={t.saves} note={`${n(t.reports)} reports filed`} />
         <Kpi label="Gemini runs" value={s.gemini.total} note={`${pct(s.gemini.completed, s.gemini.total)} completed`} />
@@ -78,12 +78,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <section className="grid grid-2">
         <div className="card">
           <h2>Last 30 days</h2>
-          <p className="sub">Ha votes vs. new posts and comments, per day.</p>
+          <p className="sub">Likes vs. new posts and comments, per day.</p>
           <Trend days={s.days} />
         </div>
         <div className="card">
           <h2>When campus laughs</h2>
-          <p className="sub">Ha votes + comment hearts by weekday and hour.</p>
+          <p className="sub">Likes + comment hearts by weekday and hour.</p>
           <Heatmap grid={s.heatmap} />
         </div>
       </section>
@@ -91,13 +91,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <section className="grid grid-3">
         <div className="card">
           <h2>Which joke style wins?</h2>
-          <p className="sub">Average Ha per live post, by caption style.</p>
-          <Bars rows={s.styles.map((style) => ({ label: style.style, value: style.average, tip: `${style.style}: ${style.average.toFixed(2)} Ha/post over ${style.posts} posts` }))} format={(v) => v.toFixed(2)} />
+          <p className="sub">Average likes per live post, by caption style.</p>
+          <Bars rows={s.styles.map((style) => ({ label: style.style, value: style.average, tip: `${style.style}: ${style.average.toFixed(2)} likes/post over ${style.posts} posts` }))} format={(v) => v.toFixed(2)} />
         </div>
         <div className="card">
           <h2>Is brevity the soul of wit?</h2>
-          <p className="sub">Average Ha per post, by caption length.</p>
-          <Bars rows={s.lengths.map((l) => ({ label: l.label, value: l.average, tip: `${l.label}: ${l.average.toFixed(2)} Ha/post over ${l.posts} posts` }))} format={(v) => v.toFixed(2)} />
+          <p className="sub">Average likes per post, by caption length.</p>
+          <Bars rows={s.lengths.map((l) => ({ label: l.label, value: l.average, tip: `${l.label}: ${l.average.toFixed(2)} likes/post over ${l.posts} posts` }))} format={(v) => v.toFixed(2)} />
         </div>
         <div className="card">
           <h2>Photo → punchline funnel</h2>
@@ -112,7 +112,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <div className="notice-row">
             <div>
               <h2>Columbia or New York?</h2>
-              <p className="sub" style={{ margin: 0 }}>What the jokes are about, ranked by total Ha (keywords in caption and scene).</p>
+              <p className="sub" style={{ margin: 0 }}>What the jokes are about, ranked by total likes (keywords in caption and scene).</p>
             </div>
             <Link className="btn" href="/rankings/topics">Topic ranking →</Link>
           </div>
@@ -147,7 +147,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <section className="grid grid-3">
         <div className="card">
           <h2>Hall of fame</h2>
-          <p className="sub">Top 5 of the member Top page (all time): more Ha first, ties go to the newer post.</p>
+          <p className="sub">Top 5 of the member Top page (all time): more likes first, ties go to the newer post.</p>
           {board.posts.length ? (
             <div className="hall">
               {board.posts.slice(0, 5).map((post) => (
@@ -159,7 +159,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                     <span className="clip" style={{ fontWeight: 600 }}>{post.caption}</span>
                     <span className="muted" style={{ fontSize: 12 }}>{post.author.name} · {post.style}</span>
                   </span>
-                  <span className="badge badge-brand num">{n(post.haCount)} Ha</span>
+                  <span className="badge badge-brand num">{n(post.haCount)} likes</span>
                 </Link>
               ))}
             </div>
@@ -168,10 +168,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </div>
         <div className="card">
           <h2>Hottest creators</h2>
-          <p className="sub">Most Ha received, all time — same as the member Top page.</p>
+          <p className="sub">Most likes received, all time — same as the member Top page.</p>
           <ol className="mini-rank">
             {board.people.slice(0, 5).map((p) => (
-              <li key={p.user.id}><Link href={`/users/${p.user.id}`}><b>{p.user.name}</b></Link><span className="badge badge-brand num">{n(p.haReceived)} Ha</span></li>
+              <li key={p.user.id}><Link href={`/users/${p.user.id}`}><b>{p.user.name}</b></Link><span className="badge badge-brand num">{n(p.haReceived)} likes</span></li>
             ))}
           </ol>
           {!board.people.length && <p className="empty">Nobody yet.</p>}

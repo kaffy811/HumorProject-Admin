@@ -106,7 +106,7 @@ export async function postRatings(db: ServiceClient, sort: string) {
     return { ...c, ...t, net: t.up - t.down, perDay: t.up / ageDays, wilson, author: owner.get(c.image_id) ?? "" };
   });
   const sorts: Record<string, (a: (typeof rows)[number], b: (typeof rows)[number]) => number> = {
-    ha: (a, b) => b.up - a.up, net: (a, b) => b.net - a.net, velocity: (a, b) => b.perDay - a.perDay,
+    ha: (a, b) => b.up - a.up, dislikes: (a, b) => b.down - a.down, net: (a, b) => b.net - a.net, velocity: (a, b) => b.perDay - a.perDay,
     comments: (a, b) => b.comments - a.comments, wilson: (a, b) => b.wilson - a.wilson,
   };
   const key = sort in sorts ? sort : "ha";

@@ -16,7 +16,7 @@ export async function Ratings({ page, sort }: { page: number; sort: string }) {
     <>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>Caption</th><th>Author</th>{head("ha", "Ha")}<th className="r">Down</th>{head("net", "Net")}{head("velocity", "Ha / day")}{head("wilson", "Confidence")}{head("comments", "Comments")}</tr></thead>
+          <thead><tr><th>#</th><th>Caption</th><th>Author</th>{head("ha", "Likes")}{head("dislikes", "Dislikes")}{head("net", "Net")}{head("velocity", "Likes / day")}{head("wilson", "Confidence")}{head("comments", "Comments")}</tr></thead>
           <tbody>
             {slice.map((r, i) => (
               <tr key={r.id}>

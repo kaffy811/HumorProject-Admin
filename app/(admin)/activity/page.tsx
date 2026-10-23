@@ -115,7 +115,7 @@ const ACTION_CATEGORY: Record<string, string> = {
   login: "auth", logout: "auth", signup: "auth", admin_login: "auth",
   upload: "post", publish: "post", edit: "post", delete: "post", restore: "post", purge: "post",
   generate: "ai", generate_failed: "ai",
-  ha: "reaction", unha: "reaction", downvote: "reaction", heart: "reaction", unheart: "reaction",
+  like: "reaction", unlike: "reaction", dislike: "reaction", undislike: "reaction", heart: "reaction", unheart: "reaction",
   comment: "comment", reply: "comment", delete_comment: "comment",
   save: "save", unsave: "save", report_post: "report", report_comment: "report",
   onboard: "profile", update_profile: "profile",
@@ -128,7 +128,7 @@ function Head() {
       <div>
         <span className="eyebrow">Activity log · every action, recorded by the database</span>
         <h1>Who did what, when.</h1>
-        <p>Sign-ins, posts, AI generations, Ha, comments, saves, reports, profile changes and admin decisions — from the member site and this console alike. Rows marked “history” were reconstructed from existing data when logging started.</p>
+        <p>Sign-ins, posts, AI generations, likes and dislikes, comments, saves, reports, profile changes and admin decisions — from the member site and this console alike. Rows marked “history” were reconstructed from existing data when logging started.</p>
       </div>
     </header>
   );

@@ -1,12 +1,13 @@
 export const CATEGORIES: Record<string, string> = {
-  auth: "Sign-in", post: "Posts", ai: "AI generation", reaction: "Likes & hearts", comment: "Comments",
+  auth: "Sign-in", post: "Posts", ai: "AI generation", reaction: "Votes & hearts", comment: "Comments",
   save: "Saves", report: "Reports", profile: "Profile", admin: "Admin",
 };
 export const ACTIONS: Record<string, string> = {
   login: "Signed in", logout: "Signed out", signup: "Created an account", admin_login: "Opened the admin console",
   upload: "Uploaded a photo", publish: "Published a post", edit: "Edited a post", delete: "Deleted a post", restore: "Restored a post", purge: "Permanently removed a post",
   generate: "Generated captions", generate_failed: "Caption generation failed",
-  ha: "Gave a Ha", unha: "Took back a Ha", downvote: "Downvoted a post", heart: "Hearted a comment", unheart: "Removed a comment heart",
+  like: "Liked a post", unlike: "Removed a like", dislike: "Disliked a post", undislike: "Removed a dislike",
+  heart: "Hearted a comment", unheart: "Removed a comment heart",
   comment: "Commented", reply: "Replied to a comment", delete_comment: "Deleted a comment",
   save: "Saved a post", unsave: "Unsaved a post", report_post: "Reported a post", report_comment: "Reported a comment",
   onboard: "Finished onboarding", update_profile: "Updated their profile",
@@ -25,6 +26,7 @@ export function detailText(action: string, detail: Record<string, unknown>) {
   if (typeof detail.reason === "string") parts.push(String(detail.reason));
   if (typeof detail.username === "string") parts.push(`@${detail.username}`);
   if (detail.avatar === true) parts.push("new photo");
+  if (typeof detail.switchedFrom === "string") parts.push(`switched from ${detail.switchedFrom}`);
   if (typeof detail.userAgent === "string") parts.push(browser(detail.userAgent));
   return parts.join(" · ");
 }

@@ -22,10 +22,11 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
     return extra ? extra(q) : q;
   };
   function base(table: string) { return db.from(table).select("*", { count: "exact", head: true }); }
-  const [{ data: auth }, images, given, comments, hearts, generations] = await Promise.all([
+  const [{ data: auth }, images, given, disliked, comments, hearts, generations] = await Promise.all([
     db.auth.admin.getUserById(id),
     db.from("humor_images").select("id,storage_path,status,created_at,humor_captions(id,content,style,deleted_at,created_at)").eq("user_id", id).order("created_at", { ascending: false }).limit(60),
     count("humor_votes", "user_id", (q) => q.eq("value", 1)),
+    count("humor_votes", "user_id", (q) => q.eq("value", -1)),
     count("humor_comments", "user_id", (q) => q.is("deleted_at", null)),
     count("humor_comment_votes", "user_id"),
     count("humor_generations", "user_id"),
@@ -65,7 +66,7 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
         </span>
       </header>
       <section className="grid grid-kpi">
-        {[["Posts", posts.filter((p) => !p.deleted_at).length], ["Ha received", received], ["Ha given", given.count ?? 0], ["Comments", comments.count ?? 0], ["Comment hearts given", hearts.count ?? 0], ["Gemini runs", generations.count ?? 0]].map(([label, value]) => (
+        {[["Posts", posts.filter((p) => !p.deleted_at).length], ["Likes received", received], ["Likes given", given.count ?? 0], ["Dislikes given", disliked.count ?? 0], ["Comments", comments.count ?? 0], ["Comment hearts given", hearts.count ?? 0], ["Gemini runs", generations.count ?? 0]].map(([label, value]) => (
           <div className="card kpi" key={label as string}><span className="eyebrow">{label}</span><div className="value num">{n(value as number)}</div></div>
         ))}
       </section>
@@ -127,7 +128,7 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
         <p className="sub">Latest 60 uploads by this member, including deleted ones.</p>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Image</th><th>Caption</th><th>Style</th><th className="r">Ha</th><th>Status</th><th>Posted</th></tr></thead>
+            <thead><tr><th>Image</th><th>Caption</th><th>Style</th><th className="r">Likes</th><th>Status</th><th>Posted</th></tr></thead>
             <tbody>
               {posts.map((post) => (
                 <tr key={post.id}>
