@@ -35,14 +35,14 @@ export default async function Ai() {
 
       <section className="card">
         <h2>Models</h2>
-        <p className="sub">One row per provider + model. likes/post counts only live posts that came from that model.</p>
+        <p className="sub">One row per provider + model. likes/post counts only live posts that came from that model. Models added in <Link href="/ai/llm-models">LLM models &amp; providers</Link> are listed even before they have recorded runs (Test run calls are not recorded).</p>
         <div className="table-wrap">
           <table>
             <thead><tr><th>Provider</th><th>Model</th><th className="r">Runs</th><th className="r">Success</th><th className="r">Tokens / run</th><th className="r">Median</th><th className="r">p90</th><th className="r">Published</th><th className="r">Likes / post</th><th>Last used</th></tr></thead>
             <tbody>
               {s.models.map((m) => (
                 <tr key={m.provider + m.model}>
-                  <td><span className="badge">{PROVIDERS[m.provider] ?? m.provider}</span></td>
+                  <td><span className="badge">{s.providerNames[m.provider] ?? PROVIDERS[m.provider] ?? m.provider}</span></td>
                   <td><Link href={`/ai/runs?model=${encodeURIComponent(m.model)}`} className="mono" style={{ fontWeight: 700 }}>{m.model}</Link></td>
                   <td className="r num">{n(m.runs)}</td>
                   <td className="r num">{pct(m.completed, m.runs)}{m.failed > 0 && <span className="muted"> · {m.failed} failed</span>}</td>
@@ -54,7 +54,16 @@ export default async function Ai() {
                   <td className="muted">{day(m.lastUsed)}</td>
                 </tr>
               ))}
-              {!s.models.length && <tr><td colSpan={10} className="empty">No AI runs recorded yet.</td></tr>}
+              {s.unused.map((m) => (
+                <tr key={`unused-${m.humor_llm_providers?.slug}-${m.model_id}`}>
+                  <td><span className="badge">{m.humor_llm_providers?.name ?? "No provider"}</span></td>
+                  <td><span className="mono" style={{ fontWeight: 700 }}>{m.model_id}</span><br /><span className="muted" style={{ fontSize: 12 }}>{m.display_name}{m.is_active ? "" : " · inactive"}</span></td>
+                  <td className="r num">0</td>
+                  <td colSpan={6} className="muted">No recorded runs yet: the member app does not call this model.</td>
+                  <td className="muted">—</td>
+                </tr>
+              ))}
+              {!s.models.length && !s.unused.length && <tr><td colSpan={10} className="empty">No AI runs recorded yet.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -118,7 +127,7 @@ export default async function Ai() {
 
       <section className="card">
         <h2>Prompt versions</h2>
-        <p className="sub">The exact prompt text sent with the newest run of each version, and how that version performs. Prompts are set in the member app&apos;s code; bumping its prompt_version starts a new row here.</p>
+        <p className="sub">The exact prompt text sent with the newest run of each version, and how that version performs. Prompts are set in the member app&apos;s code; bumping its prompt_version starts a new row here. Only versions that still have a <Link href="/ai/prompt-chains">prompt chain</Link> are shown{s.hiddenVersions ? ` (${s.hiddenVersions} hidden because its chain was deleted; its runs and posts are kept)` : ""}.</p>
         <div className="stack">
           {s.versions.map((v) => {
             const p = s.prompts.get(v.version);

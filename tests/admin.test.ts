@@ -268,5 +268,9 @@ void (async () => {
   assert.equal(parseCaptions("not json").ok, false);
   assert.equal(parseCaptions('```json\n' + four + '\n```').ok, true, "code fences are tolerated");
   assert.deepEqual(parseCaptions(JSON.stringify({ captions: [{ caption: "x", style: "pun" }, { caption: "y", style: "pun" }] })).warnings, ["Expected 4 captions, got 2.", "Styles repeat."]);
+  // campus-nyc-v1 format: plain strings and a scene description.
+  const legacy = parseCaptions(JSON.stringify({ description: "A meme face.", captions: ["a", "b", "c", "d"] }));
+  assert.deepEqual(legacy.captions.map((c) => c.caption), ["a", "b", "c", "d"]); assert.equal(legacy.description, "A meme face.");
+  assert.equal(legacy.warnings.length, 1); assert.match(legacy.warnings[0], /No joke styles/);
   console.log("PASS provider connectors (OpenAI, Gemini), schema fallback and caption checks.");
 })().catch((error) => { console.error(error); process.exit(1); });
