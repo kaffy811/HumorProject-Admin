@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin, requireSuperadmin } from "./admin";
 import { catalogPath, dbErrorMessage, parseMix, parseRecord, resource, STEP_RESOURCE, type Resource } from "./catalog";
+import { chainIssue, type ChainStep } from "./chain-check";
 import { serviceClient } from "./supabase/service";
 
 // On an error the submitted values come back so the form is refilled, not cleared.
@@ -105,4 +106,25 @@ export async function deleteStep(form: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath(`/ai/prompt-chains/${chainId}`);
   redirect(`/ai/prompt-chains/${chainId}?step=deleted`);
+}
+
+// One chain serves every member: it gets 100% of the mix, all others 0%.
+export async function chooseChainForMembers(_: CatalogState, form: FormData): Promise<CatalogState> {
+  const admin = await requireAdmin();
+  const chosen = String(form.get("chain") ?? "");
+  if (!UUID.test(chosen)) return { error: "Choose a prompt chain." };
+  const db = serviceClient(admin.id);
+  const { data: chains, error: read } = await db.from("humor_prompt_chains")
+    .select("id,name,humor_prompt_chain_steps(position,user_prompt,humor_llm_models(display_name,model_id,is_active,supports_vision,humor_llm_providers(slug,name)))");
+  if (read) return { error: read.message };
+  const chain = (chains ?? []).find((c) => c.id === chosen);
+  if (!chain) return { error: "That prompt chain no longer exists." };
+  const issue = chainIssue(chain.humor_prompt_chain_steps as unknown as ChainStep[]);
+  if (issue) return { error: `${chain.name} cannot serve members yet: ${issue}` };
+  const shares = Object.fromEntries((chains ?? []).map((c) => [c.id as string, c.id === chosen ? 100 : 0]));
+  const { error } = await db.rpc("humor_set_prompt_chain_mix", { shares, actor: admin.id });
+  if (error) return { error: error.message };
+  revalidatePath("/ai/prompt-chains", "layout");
+  revalidatePath("/ai");
+  return { ok: `Members now get ${chain.name}.` };
 }
