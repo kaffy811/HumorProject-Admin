@@ -2,11 +2,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin, requireSuperadmin } from "./admin";
-import { catalogPath, dbErrorMessage, parseMix, parseRecord, resource, STEP_RESOURCE } from "./catalog";
+import { catalogPath, dbErrorMessage, parseMix, parseRecord, resource, STEP_RESOURCE, type Resource } from "./catalog";
 import { serviceClient } from "./supabase/service";
 
-export type CatalogState = { error?: string; ok?: string } | null;
+// On an error the submitted values come back so the form is refilled, not cleared.
+export type CatalogState = { error?: string; ok?: string; values?: Record<string, string | boolean>; at?: number } | null;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function failed(def: Resource, form: FormData, error: string): CatalogState {
+  const values = Object.fromEntries(def.fields.map((f) => [f.name, f.kind === "checkbox" ? form.get(f.name) === "on" : String(form.get(f.name) ?? "")]));
+  return { error, values, at: Date.now() };
+}
 
 // Team & access tables (sign-up lists) are superadmin-only, like the rest of that page.
 async function authorize(form: FormData) {
@@ -19,10 +25,10 @@ export async function createRecord(_: CatalogState, form: FormData): Promise<Cat
   const { admin, def } = await authorize(form);
   if (!def) return { error: "Unknown table." };
   const parsed = parseRecord(def, form);
-  if (!parsed.ok) return { error: parsed.error };
+  if (!parsed.ok) return failed(def, form, parsed.error);
   const row = def.stampCreator ? { ...parsed.value, created_by: admin.id } : parsed.value;
   const { error } = await serviceClient(admin.id).from(def.table).insert(row);
-  if (error) return { error: dbErrorMessage(def, error) };
+  if (error) return failed(def, form, dbErrorMessage(def, error));
   revalidatePath(catalogPath(def));
   return { ok: `Added ${def.singular}.` };
 }
@@ -32,9 +38,9 @@ export async function updateRecord(_: CatalogState, form: FormData): Promise<Cat
   const id = String(form.get("id") ?? "");
   if (!def || !UUID.test(id)) return { error: "Unknown record." };
   const parsed = parseRecord(def, form);
-  if (!parsed.ok) return { error: parsed.error };
+  if (!parsed.ok) return failed(def, form, parsed.error);
   const { data, error } = await serviceClient(admin.id).from(def.table).update(parsed.value).eq("id", id).select("id").maybeSingle();
-  if (error) return { error: dbErrorMessage(def, error) };
+  if (error) return failed(def, form, dbErrorMessage(def, error));
   if (!data) return { error: `This ${def.singular} no longer exists.` };
   revalidatePath(catalogPath(def));
   revalidatePath(catalogPath(def, id));
@@ -79,12 +85,12 @@ export async function saveStep(_: CatalogState, form: FormData): Promise<Catalog
   const id = String(form.get("id") ?? "");
   if (!UUID.test(chainId) || (id && !UUID.test(id))) return { error: "Unknown step." };
   const parsed = parseRecord(STEP_RESOURCE, form);
-  if (!parsed.ok) return { error: parsed.error };
+  if (!parsed.ok) return failed(STEP_RESOURCE, form, parsed.error);
   const db = serviceClient(admin.id).from(STEP_RESOURCE.table);
   const { data, error } = id
     ? await db.update(parsed.value).eq("id", id).eq("chain_id", chainId).select("id").maybeSingle()
     : await db.insert({ ...parsed.value, chain_id: chainId }).select("id").single();
-  if (error) return { error: dbErrorMessage(STEP_RESOURCE, error) };
+  if (error) return failed(STEP_RESOURCE, form, dbErrorMessage(STEP_RESOURCE, error));
   if (!data) return { error: "This step no longer exists." };
   revalidatePath(`/ai/prompt-chains/${chainId}`);
   return { ok: id ? "Step saved." : "Step added." };

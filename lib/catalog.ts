@@ -20,7 +20,7 @@ export type Resource = {
   unique: string; stampCreator?: boolean;
   // Rows elsewhere that block a delete (foreign key RESTRICT).
   inUse?: string;
-  // Another table listed as a section under this one (providers under models).
+  // Another table listed as a section above this one (providers above models).
   companion?: string;
   // Listed on another resource's page instead of its own tab.
   listedOn?: string;
@@ -70,11 +70,11 @@ export const RESOURCES: Resource[] = [
   },
   {
     section: "ai", slug: "llm-models", table: "humor_llm_models", title: "LLM models", singular: "model",
-    description: "Models the caption pipeline can call (a prompt-chain step points at one of these), and below them the providers that host them.",
+    description: "The providers that host models, then the models the caption pipeline can call (a prompt-chain step points at one of these).",
     fields: [
       { name: "display_name", label: "Name", kind: "text", required: true, max: 80, list: true },
       { name: "provider_id", label: "Provider", kind: "ref", required: true, ref: { table: "humor_llm_providers", label: "name" }, list: true },
-      { name: "model_id", label: "API model id", kind: "text", required: true, max: 120, pattern: /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,119}$/, patternHint: "letters, digits and . _ : / -", mono: true, list: true, hint: "Exactly what the provider API expects, e.g. gemini-3.8-flash." },
+      { name: "model_id", label: "API model id", kind: "text", required: true, max: 120, pattern: /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,119}$/, patternHint: "letters, digits and . _ : / - (no spaces)", mono: true, list: true, hint: "The exact ID the provider's API expects, not the product name: e.g. gemini-3.8-flash. For OpenAI, copy it from the Playground model list." },
       { name: "is_active", label: "Active", kind: "checkbox", defaultValue: true, list: true },
       { name: "supports_vision", label: "Accepts images", kind: "checkbox", defaultValue: true, list: true },
       { name: "max_output_tokens", label: "Max output tokens", kind: "int", min: 1, maxValue: 65536, list: true },
