@@ -20,10 +20,11 @@ export function CatalogForm({ slug, initial, refs, chainId, defaults }: { slug: 
       <input type="hidden" name="resource" value={def.slug} />
       {initial && <input type="hidden" name="id" value={initial.id} />}
       {chainId && <input type="hidden" name="chain_id" value={chainId} />}
-      <div className="grid grid-2" style={{ gap: 12 }}>
+      {/* Remounted after each failed save so the fields show what was submitted. */}
+      <div className="grid grid-2" style={{ gap: 12 }} key={state?.at ?? 0}>
         {def.fields.map((field) => (
           <div key={field.name} className="field" style={field.kind === "textarea" || field.kind === "json" ? { gridColumn: "1 / -1" } : undefined}>
-            <Input field={field} value={initial ? initial[field.name] : defaults?.[field.name]} options={refs[field.name]} />
+            <Input field={field} value={state?.values ? state.values[field.name] : initial ? initial[field.name] : defaults?.[field.name]} options={refs[field.name]} />
           </div>
         ))}
       </div>
@@ -50,7 +51,7 @@ function Input({ field, value, options }: { field: Field; value: unknown; option
       </>
     );
   if (field.kind === "json")
-    return <>{label}<textarea {...common} className="textarea mono" rows={8} defaultValue={initial == null ? "" : JSON.stringify(initial, null, 2)} />{hint}</>;
+    return <>{label}<textarea {...common} className="textarea mono" rows={8} defaultValue={initial == null ? "" : typeof initial === "string" ? initial : JSON.stringify(initial, null, 2)} />{hint}</>;
   if (field.kind === "textarea")
     return <>{label}<textarea {...common} className="textarea" maxLength={field.max} rows={field.max && field.max > 5000 ? 14 : undefined} defaultValue={String(initial ?? "")} />{hint}</>;
   if (field.kind === "select" || field.kind === "ref") {

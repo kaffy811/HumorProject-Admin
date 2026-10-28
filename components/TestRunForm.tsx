@@ -1,5 +1,5 @@
 "use client";
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { testRun, type TestRunState } from "@/lib/test-run-actions";
 import { duration, n } from "@/lib/format";
 
@@ -11,7 +11,8 @@ export function TestRunForm({ models, chains, supported }: { models: (Option & {
   const provider = models.find((m) => m.id === modelId)?.provider ?? "";
   return (
     <section className="grid grid-2">
-      <form action={action} className="card form">
+      {/* Submitted by hand so a failed run keeps the photo and choices (form actions reset the form). */}
+      <form className="card form" onSubmit={(e) => { e.preventDefault(); const data = new FormData(e.currentTarget); startTransition(() => action(data)); }}>
         <div className="field">
           <label htmlFor="model">Model</label>
           <select id="model" name="model" className="select" required value={modelId} onChange={(e) => setModelId(e.target.value)}>

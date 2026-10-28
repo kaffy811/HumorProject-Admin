@@ -74,7 +74,7 @@ export const RESOURCES: Resource[] = [
     fields: [
       { name: "display_name", label: "Name", kind: "text", required: true, max: 80, list: true },
       { name: "provider_id", label: "Provider", kind: "ref", required: true, ref: { table: "humor_llm_providers", label: "name" }, list: true },
-      { name: "model_id", label: "API model id", kind: "text", required: true, max: 120, pattern: /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,119}$/, patternHint: "letters, digits and . _ : / -", mono: true, list: true, hint: "Exactly what the provider API expects, e.g. gemini-3.8-flash." },
+      { name: "model_id", label: "API model id", kind: "text", required: true, max: 120, pattern: /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,119}$/, patternHint: "letters, digits and . _ : / - (no spaces)", mono: true, list: true, hint: "The exact ID the provider's API expects, not the product name: e.g. gemini-3.8-flash. For OpenAI, copy it from the Playground model list." },
       { name: "is_active", label: "Active", kind: "checkbox", defaultValue: true, list: true },
       { name: "supports_vision", label: "Accepts images", kind: "checkbox", defaultValue: true, list: true },
       { name: "max_output_tokens", label: "Max output tokens", kind: "int", min: 1, maxValue: 65536, list: true },
