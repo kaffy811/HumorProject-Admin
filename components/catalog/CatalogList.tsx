@@ -14,7 +14,7 @@ export type ListSearch = Promise<{ q?: string; page?: string; deleted?: string }
 export const catalogTitle = async (section: Resource["section"], params: Promise<{ resource: string }>) => ({ title: resource((await params).resource, section)?.title ?? "Not found" });
 
 // List + search + create form for one catalog table, shown as a tab of its section.
-// A companion table (providers under models) is listed below it on the same page.
+// A companion table (providers for models) is listed above it on the same page.
 export async function CatalogList({ section, params, searchParams }: { section: Resource["section"]; params: Promise<{ resource: string }>; searchParams: ListSearch }) {
   await (section === "team" ? requireSuperadmin() : requireAdmin());
   const def = resource((await params).resource, section);
@@ -48,17 +48,6 @@ export async function CatalogList({ section, params, searchParams }: { section: 
       {error ? <MissingTable table={def.table} /> : (
         <div className="stack">
           {query.deleted && <div className="notice notice-good" role="status">Deleted.</div>}
-          <details className="card" open={!(data ?? []).length && !q}>
-            <summary style={{ cursor: "pointer", fontWeight: 800 }}>+ Add {def.singular}</summary>
-            <div style={{ marginTop: 14 }}><CatalogForm slug={def.slug} refs={refs} /></div>
-          </details>
-          <form className="toolbar" role="search">
-            <input className="input" name="q" defaultValue={q} placeholder={`Search ${def.title.toLowerCase()}`} aria-label={`Search ${def.title.toLowerCase()}`} />
-            <button className="btn" type="submit">Search</button>
-            {q && <Link className="btn" href={base}>Clear</Link>}
-          </form>
-          <CatalogTable def={def} rows={(data ?? []) as Record<string, unknown>[]} refs={refs} empty={q ? "Nothing matches." : `No ${def.title.toLowerCase()} yet.`} />
-          <Pager page={page} total={count ?? 0} size={PAGE_SIZE} base={base} params={{ q }} />
           {companion && extra && (
             <section className="card" id={companion.slug}>
               <h2>{companion.title}</h2>
@@ -74,6 +63,21 @@ export async function CatalogList({ section, params, searchParams }: { section: 
               )}
             </section>
           )}
+          {/* With a companion above, the main table gets a matching card. */}
+          <div className={companion ? "card stack" : "stack"} id={def.slug}>
+          {companion && <h2 style={{ margin: 0 }}>{def.title}</h2>}
+          <details className="card" style={companion ? { boxShadow: "none" } : undefined} open={!(data ?? []).length && !q}>
+            <summary style={{ cursor: "pointer", fontWeight: 800 }}>+ Add {def.singular}</summary>
+            <div style={{ marginTop: 14 }}><CatalogForm slug={def.slug} refs={refs} /></div>
+          </details>
+          <form className="toolbar" role="search">
+            <input className="input" name="q" defaultValue={q} placeholder={`Search ${def.title.toLowerCase()}`} aria-label={`Search ${def.title.toLowerCase()}`} />
+            <button className="btn" type="submit">Search</button>
+            {q && <Link className="btn" href={base}>Clear</Link>}
+          </form>
+          <CatalogTable def={def} rows={(data ?? []) as Record<string, unknown>[]} refs={refs} empty={q ? "Nothing matches." : `No ${def.title.toLowerCase()} yet.`} />
+          <Pager page={page} total={count ?? 0} size={PAGE_SIZE} base={base} params={{ q }} />
+          </div>
         </div>
       )}
     </div>

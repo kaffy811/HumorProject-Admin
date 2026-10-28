@@ -20,7 +20,7 @@ export type Resource = {
   unique: string; stampCreator?: boolean;
   // Rows elsewhere that block a delete (foreign key RESTRICT).
   inUse?: string;
-  // Another table listed as a section under this one (providers under models).
+  // Another table listed as a section above this one (providers above models).
   companion?: string;
   // Listed on another resource's page instead of its own tab.
   listedOn?: string;
@@ -70,7 +70,7 @@ export const RESOURCES: Resource[] = [
   },
   {
     section: "ai", slug: "llm-models", table: "humor_llm_models", title: "LLM models", singular: "model",
-    description: "Models the caption pipeline can call (a prompt-chain step points at one of these), and below them the providers that host them.",
+    description: "The providers that host models, then the models the caption pipeline can call (a prompt-chain step points at one of these).",
     fields: [
       { name: "display_name", label: "Name", kind: "text", required: true, max: 80, list: true },
       { name: "provider_id", label: "Provider", kind: "ref", required: true, ref: { table: "humor_llm_providers", label: "name" }, list: true },
