@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Prompt chain" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const NOTICES: Record<string, [string, string]> = {
-  "blocked=mix": ["bad", "This chain still gets traffic. Set its share in the mix to 0% first, then delete it."],
+  "blocked=mix": ["bad", "Members are using this chain. Choose another model for members (Overview) first, then delete it."],
   "blocked=1": ["bad", "Another record still points at this chain."],
   "step=deleted": ["good", "Step deleted."],
 };
@@ -52,7 +52,7 @@ export default async function PromptChain({ params, searchParams }: { params: Pr
           <h1>{chain.name}.</h1>
           <p>{chain.description ?? "No description."}</p>
         </div>
-        <Link className="btn" href="/ai/prompt-chains#mix">Mix: {share}% →</Link>
+        <Link className="btn" href="/ai#members">{share === 100 ? "In use for members" : share ? `${share}% of members` : "Not used by members"} →</Link>
       </header>
       {notice && <div className={`notice notice-${NOTICES[notice][0]}`} role="status">{NOTICES[notice][1]}</div>}
 
@@ -99,7 +99,7 @@ export default async function PromptChain({ params, searchParams }: { params: Pr
           <form action={deleteRecord} style={{ marginTop: 14, borderTop: "2px solid var(--line)", paddingTop: 14 }}>
             <input type="hidden" name="resource" value={resource("prompt-chains")!.slug} />
             <input type="hidden" name="id" value={id} />
-            <p className="sub">Deleting removes the chain and its steps. Recorded runs stay; examples lose their link to it.{share ? " Set its mix share to 0% first." : ""}</p>
+            <p className="sub">Deleting removes the chain and its steps. Recorded runs stay; examples lose their link to it.{share ? " Members are using it: choose another model for members first." : ""}</p>
             <ConfirmButton message="Delete this prompt chain and all its steps? This cannot be undone.">Delete chain</ConfirmButton>
           </form>
         </div>

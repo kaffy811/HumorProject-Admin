@@ -8,6 +8,7 @@ import { serviceClient } from "@/lib/supabase/service";
 import { clampPage, text, when } from "@/lib/format";
 import { CatalogForm, type RefOptions } from "@/components/CatalogForm";
 import { MissingTable } from "@/components/MissingTable";
+import { MemberModelCard } from "@/components/MemberModelCard";
 import { Pager } from "@/components/Pager";
 
 export type ListSearch = Promise<{ q?: string; page?: string; deleted?: string }>;
@@ -48,6 +49,7 @@ export async function CatalogList({ section, params, searchParams }: { section: 
       {error ? <MissingTable table={def.table} /> : (
         <div className="stack">
           {query.deleted && <div className="notice notice-good" role="status">Deleted.</div>}
+          {def.memberPicker && <MemberModelCard formId="members-on-models" />}
           {companion && extra && (
             <section className="card" id={companion.slug}>
               <h2>{companion.title}</h2>

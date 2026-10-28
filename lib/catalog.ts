@@ -24,6 +24,8 @@ export type Resource = {
   companion?: string;
   // Listed on another resource's page instead of its own tab.
   listedOn?: string;
+  // Shows the "Model for members" picker above the lists.
+  memberPicker?: boolean;
 };
 
 export const CAPTION_STYLES = ["Deadpan", "Roast", "Pun", "Dad joke", "Absurd", "Wholesome"] as const;
@@ -34,7 +36,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const RESOURCES: Resource[] = [
   {
-    // Listed and edited on its own pages (/ai/prompt-chains), which also hold the mix and the steps.
+    // Listed and edited on its own pages (/ai/prompt-chains), which also hold the steps.
     section: "ai", slug: "prompt-chains", table: "humor_prompt_chains", title: "Prompt chains", singular: "prompt chain",
     description: "Versioned recipes of LLM steps that turn a photo into captions.",
     fields: [
@@ -82,7 +84,7 @@ export const RESOURCES: Resource[] = [
       { name: "notes", label: "Notes", kind: "textarea", max: 500 },
     ],
     order: { column: "display_name", ascending: true }, search: ["display_name", "model_id"], unique: "This provider already has a model with that API id.",
-    companion: "llm-providers",
+    companion: "llm-providers", memberPicker: true,
   },
   {
     section: "ai", slug: "llm-providers", table: "humor_llm_providers", title: "LLM providers", singular: "provider",
@@ -191,21 +193,6 @@ export function dbErrorMessage(def: Resource, error: { code?: string; message: s
 // Table not created yet (migration not applied) → explain instead of crashing.
 export function isMissingTable(error: { code?: string; message?: string } | null | undefined) {
   return !!error && (error.code === "42P01" || error.code === "PGRST205" || /does not exist|could not find the table/i.test(error.message ?? ""));
-}
-
-// Prompt-chain mix: whole numbers 0–100 per chain that add up to exactly 100.
-export function parseMix(chainIds: string[], form: FormData): { ok: true; shares: Record<string, number> } | { ok: false; error: string } {
-  if (!chainIds.length) return { ok: false, error: "There are no prompt chains yet." };
-  const shares: Record<string, number> = {};
-  for (const id of chainIds) {
-    const raw = String(form.get(`share:${id}`) ?? "0").trim() || "0";
-    const share = Number(raw);
-    if (!/^\d{1,3}$/.test(raw) || share > 100) return { ok: false, error: "Each share must be a whole number from 0 to 100." };
-    shares[id] = share;
-  }
-  const total = Object.values(shares).reduce((a, b) => a + b, 0);
-  if (total !== 100) return { ok: false, error: `Shares must add up to 100% (now ${total}%).` };
-  return { ok: true, shares };
 }
 
 // A chain's mix row comes back as an object (one-to-one) or a one-item array.

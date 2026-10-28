@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin";
 import { aiOverview } from "@/lib/data";
 import { day, duration, n, pct } from "@/lib/format";
 import { Bars, Lines } from "@/components/charts";
+import { MemberModelCard } from "@/components/MemberModelCard";
 export const metadata: Metadata = { title: "AI models & prompts" };
 
 const PROVIDERS: Record<string, string> = { google: "Google Gemini", mock: "Local mock", anthropic: "Anthropic Claude", openai: "OpenAI" };
@@ -23,6 +24,8 @@ export default async function Ai() {
         </div>
         <Link className="btn btn-primary" href="/ai/runs">All runs →</Link>
       </header>
+
+      <MemberModelCard formId="members-on-overview" />
 
       <section className="grid grid-kpi" aria-label="Totals">
         <Kpi label="Runs" value={n(t.runs)} note={`${n(t.providers)} provider${t.providers === 1 ? "" : "s"} · ${n(s.models.length)} model${s.models.length === 1 ? "" : "s"}`} />
