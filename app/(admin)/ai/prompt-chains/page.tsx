@@ -79,7 +79,7 @@ export default async function PromptChains({ searchParams }: { searchParams: Pro
           </div>
           <section className="card" id="mix">
             <h2>Mix</h2>
-            <p className="sub">How new generation requests are split between chains, e.g. 80% on the current prompt and 20% on a challenger. Shares must add up to 100%; the database re-checks the total when you save. The member app does not read this mix yet: it still runs its built-in <span className="mono">caption-styles-v3</span> prompt on every request.</p>
+            <p className="sub">How new generation requests are split between chains, e.g. 80% on the current prompt and 20% on a challenger. Shares must add up to 100%; the database re-checks the total when you save. The member app uses it for every generation: it picks a chain by share and runs that chain&apos;s step 1 with its model. If the chosen step has no active vision model, the provider has no API key on the member app, or the model fails, that request falls back to the built-in Gemini prompt (<span className="mono">caption-styles-v3</span>).</p>
             {latest && <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>Last changed {when(latest.updated_at)}{latest.updated_by && <> by <PersonLink profile={editor} id={latest.updated_by} /></>}</div>}
             {chains.length ? <MixForm chains={chains.map((c) => ({ id: c.id, name: c.name, prompt_version: c.prompt_version, share: shareOf(c.humor_prompt_chain_mix) }))} /> : <p className="empty">Add a prompt chain first.</p>}
           </section>
