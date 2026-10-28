@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 // Tabs across the top of a console section. The most specific tab wins,
-// so /ai/prompt-chains/mix highlights "Chain mix", not "Prompt chains".
+// so /ai/runs/<id> highlights "Generation requests", not "Overview".
 export function SectionTabs({ label, tabs }: { label: string; tabs: { href: string; label: string }[] }) {
   const path = usePathname();
   const root = tabs[0].href;

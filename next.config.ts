@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/media", destination: "/posts", permanent: false },
       { source: "/media/:path*", destination: "/posts/:path*", permanent: false },
+      // Briefly separate pages: the mix now lives on Prompt chains, AI media in Posts.
+      { source: "/ai/prompt-chains/mix", destination: "/ai/prompt-chains#mix", permanent: false },
+      { source: "/ai/media", destination: "/posts?source=ai", permanent: false },
     ];
   },
   async headers() {

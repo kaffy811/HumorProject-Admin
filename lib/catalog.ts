@@ -2,7 +2,7 @@
 // kaffy811/HumorProject). One definition per table drives its list, forms,
 // validation and server actions. Pure: no database, safe to unit test.
 
-export type FieldKind = "text" | "textarea" | "int" | "decimal" | "checkbox" | "select" | "ref" | "email" | "domain" | "url";
+export type FieldKind = "text" | "textarea" | "int" | "decimal" | "checkbox" | "select" | "ref" | "email" | "domain" | "url" | "json";
 export type Field = {
   name: string; label: string; kind: FieldKind;
   required?: boolean; max?: number; min?: number; maxValue?: number; step?: number;
@@ -29,6 +29,17 @@ const EMAIL = /^[^@\s]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const RESOURCES: Resource[] = [
+  {
+    // Listed and edited on its own pages (/ai/prompt-chains), which also hold the mix and the steps.
+    section: "ai", slug: "prompt-chains", table: "humor_prompt_chains", title: "Prompt chains", singular: "prompt chain",
+    description: "Versioned recipes of LLM steps that turn a photo into captions.",
+    fields: [
+      { name: "name", label: "Name", kind: "text", required: true, max: 80 },
+      { name: "prompt_version", label: "Prompt version", kind: "text", required: true, max: 60, pattern: /^[a-z0-9][a-z0-9._-]{1,59}$/, patternHint: "2–60 lowercase letters, digits and . _ -", mono: true, hint: "Stamped on every generation run that uses this chain, e.g. caption-styles-v4. Renaming it unlinks the runs already recorded." },
+      { name: "description", label: "Description", kind: "textarea", max: 1000 },
+    ],
+    order: { column: "created_at", ascending: false }, search: ["name", "prompt_version"], unique: "A chain with that prompt version already exists.",
+  },
   {
     section: "ai", slug: "terms", table: "humor_terms", title: "Terms", singular: "term",
     description: "Campus and city vocabulary the caption prompt leans on (Butler, Low Steps, the 1 train…). Keep definitions short and true.",
@@ -100,16 +111,31 @@ export const RESOURCES: Resource[] = [
   },
 ];
 
+// Steps belong to a chain and are edited on the chain's page, so they are not a tab of their own.
+export const STEP_RESOURCE: Resource = {
+  section: "ai", slug: "prompt-chain-steps", table: "humor_prompt_chain_steps", title: "Steps", singular: "step",
+  description: "One LLM call in a prompt chain.",
+  fields: [
+    { name: "position", label: "Step number", kind: "int", required: true, min: 1, maxValue: 20, hint: "Steps run in this order." },
+    { name: "name", label: "Name", kind: "text", required: true, max: 80 },
+    { name: "llm_model_id", label: "Model", kind: "ref", ref: { table: "humor_llm_models", label: "display_name" } },
+    { name: "system_prompt", label: "System prompt", kind: "textarea", required: true, max: 20000 },
+    { name: "user_prompt", label: "User prompt", kind: "textarea", required: true, max: 4000, hint: "{direction} is replaced with the member's direction; [image] marks the photo." },
+    { name: "output_schema", label: "Output JSON schema", kind: "json", max: 20000, hint: "Optional JSON object the response must match." },
+  ],
+  order: { column: "position", ascending: true }, search: ["name"], unique: "This chain already has a step with that number.",
+};
+
 export function resource(slug: string, section?: Resource["section"]) {
   return RESOURCES.find((r) => r.slug === slug && (!section || r.section === section)) ?? null;
 }
 export const catalogPath = (def: Resource, id?: string) => `/${def.section}/${def.slug}${id ? `/${id}` : ""}`;
 
-export type Parsed = { ok: true; value: Record<string, string | number | boolean | null> } | { ok: false; error: string };
+export type Parsed = { ok: true; value: Record<string, string | number | boolean | object | null> } | { ok: false; error: string };
 
 // Mirrors the table checks so admins get a readable message, not a Postgres error.
 export function parseRecord(def: Resource, form: FormData): Parsed {
-  const value: Record<string, string | number | boolean | null> = {};
+  const value: Record<string, string | number | boolean | object | null> = {};
   for (const field of def.fields) {
     if (field.kind === "checkbox") { value[field.name] = form.get(field.name) === "on"; continue; }
     let raw = String(form.get(field.name) ?? "").trim();
@@ -133,6 +159,13 @@ export function parseRecord(def: Resource, form: FormData): Parsed {
       if (!whole || (field.min !== undefined && number < field.min) || (field.maxValue !== undefined && number > field.maxValue))
         return { ok: false, error: `${field.label} must be ${field.kind === "int" ? "a whole number" : "a number with at most 2 decimals"} from ${field.min} to ${field.maxValue}.` };
       value[field.name] = number;
+      continue;
+    }
+    if (field.kind === "json") {
+      let parsed: unknown;
+      try { parsed = JSON.parse(raw); } catch { return { ok: false, error: `${field.label} is not valid JSON.` }; }
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return { ok: false, error: `${field.label} must be a JSON object.` };
+      value[field.name] = parsed as object;
       continue;
     }
     value[field.name] = raw;
