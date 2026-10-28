@@ -59,7 +59,7 @@ export default async function Ai() {
                   <td><span className="badge">{m.humor_llm_providers?.name ?? "No provider"}</span></td>
                   <td><span className="mono" style={{ fontWeight: 700 }}>{m.model_id}</span><br /><span className="muted" style={{ fontSize: 12 }}>{m.display_name}{m.is_active ? "" : " · inactive"}</span></td>
                   <td className="r num">0</td>
-                  <td colSpan={6} className="muted">No recorded runs yet: the member app does not call this model.</td>
+                  <td colSpan={6} className="muted">No recorded runs yet. Members get this model once a prompt chain whose step 1 uses it has a share in the mix.</td>
                   <td className="muted">—</td>
                 </tr>
               ))}
