@@ -8,7 +8,7 @@ import { clampPage, duration, n, text, when } from "@/lib/format";
 import { PersonLink } from "@/components/Person";
 import { Pager } from "@/components/Pager";
 import { RunStatus } from "@/components/RunStatus";
-export const metadata: Metadata = { title: "AI runs" };
+export const metadata: Metadata = { title: "Generation requests" };
 
 type Search = Promise<{ status?: string; model?: string; version?: string; page?: string }>;
 export default async function Runs({ searchParams }: { searchParams: Search }) {
@@ -33,12 +33,11 @@ export default async function Runs({ searchParams }: { searchParams: Search }) {
   const postByImage = new Map(((posts.data ?? []) as { id: string; image_id: string }[]).map((p) => [p.image_id, p.id]));
   return (
     <div>
-      <Link href="/ai" className="muted">← Models &amp; prompts</Link>
-      <header className="page-head" style={{ marginTop: 12 }}>
+      <header className="page-head">
         <div>
-          <span className="eyebrow">humor_generations</span>
-          <h1>AI runs.</h1>
-          <p>Every generation request: who asked, which model and prompt version, what it cost and whether it became a post.</p>
+          <span className="eyebrow">Read · <span className="mono">humor_generations</span></span>
+          <h1>Generation requests.</h1>
+          <p>Every generation request: who asked, which model and prompt version, what it cost and whether it became a post. What each call returned is under <Link href="/ai/responses">LLM responses</Link>.</p>
         </div>
       </header>
       <form className="toolbar">
