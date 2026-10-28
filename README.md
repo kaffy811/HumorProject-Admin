@@ -16,7 +16,7 @@ Superadmin console for **The Humor Project**. Source: [kaffy811/HumorProject-Adm
 | `/ai/prompt-chains`, `/ai/prompt-chains/[id]` | **Create / read / update / delete** prompt chains and their steps (system/user prompt, model, output JSON schema), with real run counts and success rate per chain (matched on `humor_generations.prompt_version`). The same page holds the **mix** (read / update): share of new requests per chain, saved atomically by `humor_set_prompt_chain_mix()`, which rejects totals other than 100%. A chain with a share above 0% cannot be deleted. The member app does not read the mix yet. |
 | `/ai/runs` | **Read** generation requests (who, model, prompt version, tokens, latency, post). |
 | `/ai/responses` | **Read** LLM responses: the four captions and styles each call returned, scene, tokens in/out/thinking, latency, failure stage. |
-| `/ai/terms`, `/ai/examples`, `/ai/llm-models`, `/ai/llm-providers`, `/team/signup-domains`, `/team/whitelisted-emails` | **Create / read / update / delete** terms, AI generation examples, LLM models, LLM providers, allowed sign-up domains and whitelisted emails. One definition per table in `lib/catalog.ts` drives the list, search, forms, validation (mirrors the SQL checks) and server actions. Deleting a provider that still has models is refused. The sign-up lists are tabs of Team & access and, like it, superadmin-only. Every change is written to the activity log. The member app does not enforce the domain and email lists yet. |
+| `/ai/terms`, `/ai/examples`, `/ai/llm-models` (providers are a section of the same page; each opens at `/ai/llm-providers/[id]`), `/team/signup-domains`, `/team/whitelisted-emails` | **Create / read / update / delete** terms, AI generation examples, LLM models, LLM providers, allowed sign-up domains and whitelisted emails. One definition per table in `lib/catalog.ts` drives the list, search, forms, validation (mirrors the SQL checks) and server actions. Deleting a provider that still has models is refused. The sign-up lists are tabs of Team & access and, like it, superadmin-only. Every change is written to the activity log. The member app does not enforce the domain and email lists yet. |
 
 ## Week 7 checklist
 
@@ -31,7 +31,7 @@ Items 4–12 are tabs of **AI models & prompts** (`/ai`); the sign-up lists are 
 | Read / view AI generated media | `/posts?source=ai` (Posts → AI caption tab), each post shows its AI runs |
 | Read generation requests | `/ai/runs` |
 | CRUD AI generation examples | `/ai/examples` |
-| CRUD LLM models / LLM providers | `/ai/llm-models`, `/ai/llm-providers` |
+| CRUD LLM models / LLM providers | `/ai/llm-models` (providers are a section of the same page; each opens at `/ai/llm-providers/[id]`) |
 | Read LLM responses | `/ai/responses` |
 | CRUD allowed sign-up domains / whitelisted emails | `/team/signup-domains`, `/team/whitelisted-emails` (superadmins) |
 | CRUD images, including upload | `/posts/new` (upload), `/posts/[id]` (edit, delete, restore, purge) |

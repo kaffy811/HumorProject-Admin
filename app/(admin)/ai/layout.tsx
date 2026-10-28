@@ -4,8 +4,7 @@ const TABS = [
   { href: "/ai/runs", label: "Generation requests" },
   { href: "/ai/responses", label: "LLM responses" },
   { href: "/ai/prompt-chains", label: "Prompt chains" },
-  { href: "/ai/llm-models", label: "LLM models" },
-  { href: "/ai/llm-providers", label: "LLM providers" },
+  { href: "/ai/llm-models", label: "LLM models & providers" },
   { href: "/ai/terms", label: "Terms" },
   { href: "/ai/examples", label: "Generation examples" },
 ];
