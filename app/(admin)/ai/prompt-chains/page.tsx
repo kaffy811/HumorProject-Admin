@@ -8,11 +8,13 @@ import { n, pct, when } from "@/lib/format";
 import { CatalogForm } from "@/components/CatalogForm";
 import { MissingTable } from "@/components/MissingTable";
 import { MixForm } from "@/components/MixForm";
+import { MemberModelForm } from "@/components/MemberModelForm";
+import { chainIssue, firstStep, type ChainStep } from "@/lib/chain-check";
 import { PersonLink } from "@/components/Person";
 export const metadata: Metadata = { title: "Prompt chains" };
 
 type Mix = { share: number; updated_at: string; updated_by: string | null };
-type Chain = { id: string; prompt_version: string; name: string; description: string | null; updated_at: string; humor_prompt_chain_steps: { id: string }[]; humor_prompt_chain_mix: Mix | Mix[] | null };
+type Chain = { id: string; prompt_version: string; name: string; description: string | null; updated_at: string; humor_prompt_chain_steps: ChainStep[]; humor_prompt_chain_mix: Mix | Mix[] | null };
 
 // Chains (create here, edit and delete on each chain's page) and the traffic mix between them.
 export default async function PromptChains({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
@@ -20,7 +22,7 @@ export default async function PromptChains({ searchParams }: { searchParams: Pro
   const { deleted } = await searchParams;
   const db = serviceClient();
   const { data, error } = await db.from("humor_prompt_chains")
-    .select("id,prompt_version,name,description,updated_at,humor_prompt_chain_steps(id),humor_prompt_chain_mix(share,updated_at,updated_by)")
+    .select("id,prompt_version,name,description,updated_at,humor_prompt_chain_steps(position,user_prompt,humor_llm_models(display_name,model_id,is_active,supports_vision,humor_llm_providers(slug,name))),humor_prompt_chain_mix(share,updated_at,updated_by)")
     .order("created_at", { ascending: false });
   if (error && !isMissingTable(error)) throw new Error(error.message);
   const chains = (data ?? []) as unknown as Chain[];
@@ -34,6 +36,8 @@ export default async function PromptChains({ searchParams }: { searchParams: Pro
     if (!entry.last || run.created_at > entry.last) entry.last = run.created_at;
     usage.set(run.prompt_version, entry);
   }
+  // The chain members get when one chain has the whole mix; null while split.
+  const inUse = chains.find((c) => shareOf(c.humor_prompt_chain_mix) === 100)?.id ?? null;
   const mixes = chains.map((c) => (Array.isArray(c.humor_prompt_chain_mix) ? c.humor_prompt_chain_mix[0] : c.humor_prompt_chain_mix)).filter((m): m is Mix => !!m);
   const latest = [...mixes].sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0];
   const editor = latest?.updated_by ? (await profilesByIds(db, [latest.updated_by])).get(latest.updated_by) ?? null : null;
@@ -49,6 +53,19 @@ export default async function PromptChains({ searchParams }: { searchParams: Pro
       {error ? <MissingTable table="humor_prompt_chains" /> : (
         <div className="stack">
           {deleted && <div className="notice notice-good" role="status">Prompt chain deleted.</div>}
+          <section className="card" id="members">
+            <h2>Model for members</h2>
+            <p className="sub">Choose the one prompt chain, and with it the model in its step 1, that writes captions for every member. Members never choose. Chains the member app cannot run are greyed out with the reason. If the chosen model fails on a request (for example its provider has no credits or no API key on the member app), that request falls back to the built-in Gemini prompt.</p>
+            {!chains.length ? <p className="empty">Add a prompt chain first.</p> : (
+              <>
+                {!inUse && <div className="notice notice-warn" style={{ marginBottom: 12 }}>Requests are currently split between several chains by the mix below. Saving here sends everything to one chain.</div>}
+                <MemberModelForm current={inUse} options={chains.map((c) => {
+                  const model = firstStep(c.humor_prompt_chain_steps)?.humor_llm_models;
+                  return { id: c.id, name: c.name, promptVersion: c.prompt_version, model: model?.display_name ?? null, provider: model?.humor_llm_providers?.name ?? null, issue: chainIssue(c.humor_prompt_chain_steps) };
+                })} />
+              </>
+            )}
+          </section>
           <details className="card">
             <summary style={{ cursor: "pointer", fontWeight: 800 }}>+ Add prompt chain</summary>
             <p className="sub" style={{ marginTop: 10 }}>A new chain starts at 0% of traffic. Add its steps on its page, then give it a share in the mix below.</p>
@@ -77,12 +94,12 @@ export default async function PromptChains({ searchParams }: { searchParams: Pro
               </tbody>
             </table>
           </div>
-          <section className="card" id="mix">
-            <h2>Mix</h2>
-            <p className="sub">How new generation requests are split between chains, e.g. 80% on the current prompt and 20% on a challenger. Shares must add up to 100%; the database re-checks the total when you save. The member app uses it for every generation: it picks a chain by share and runs that chain&apos;s step 1 with its model. If the chosen step has no active vision model, the provider has no API key on the member app, or the model fails, that request falls back to the built-in Gemini prompt (<span className="mono">caption-styles-v3</span>).</p>
+          <details className="card" id="mix" open={!inUse}>
+            <summary style={{ cursor: "pointer" }}><h2 style={{ display: "inline" }}>Advanced: split between chains (A/B test)</h2></summary>
+            <p className="sub" style={{ marginTop: 10 }}>Instead of one chain for everyone, split new generation requests, e.g. 80% on the current prompt and 20% on a challenger, then compare likes per post in Overview. Shares must add up to 100%; the database re-checks the total when you save. The member app uses it for every generation: it picks a chain by share and runs that chain&apos;s step 1 with its model. If the chosen step has no active vision model, the provider has no API key on the member app, or the model fails, that request falls back to the built-in Gemini prompt (<span className="mono">caption-styles-v3</span>).</p>
             {latest && <div className="muted" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>Last changed {when(latest.updated_at)}{latest.updated_by && <> by <PersonLink profile={editor} id={latest.updated_by} /></>}</div>}
             {chains.length ? <MixForm chains={chains.map((c) => ({ id: c.id, name: c.name, prompt_version: c.prompt_version, share: shareOf(c.humor_prompt_chain_mix) }))} /> : <p className="empty">Add a prompt chain first.</p>}
-          </section>
+          </details>
         </div>
       )}
     </div>

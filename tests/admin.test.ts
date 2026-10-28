@@ -274,3 +274,19 @@ void (async () => {
   assert.equal(legacy.warnings.length, 1); assert.match(legacy.warnings[0], /No joke styles/);
   console.log("PASS provider connectors (OpenAI, Gemini), schema fallback and caption checks.");
 })().catch((error) => { console.error(error); process.exit(1); });
+
+// Which chains can serve members (mirrors the member app's routing checks).
+import { chainIssue } from "../lib/chain-check";
+{
+  const m = (extra = {}) => ({ display_name: "GPT-6 Astra", model_id: "gpt-6-astra", is_active: true, supports_vision: true, humor_llm_providers: { slug: "openai", name: "OpenAI" }, ...extra });
+  const s = (model: ReturnType<typeof m> | null, user_prompt = "Image: [image]\nDirection: {direction}", position = 1) => ({ position, user_prompt, humor_llm_models: model });
+  assert.equal(chainIssue([s(m())]), null);
+  assert.equal(chainIssue([s(null, "x", 2), s(m(), undefined, 1)]), null, "step 1 is the lowest position");
+  assert.match(chainIssue([])!, /No steps/);
+  assert.match(chainIssue([s(null)])!, /no model/);
+  assert.match(chainIssue([s(m({ is_active: false }))])!, /inactive/);
+  assert.match(chainIssue([s(m({ supports_vision: false }))])!, /does not accept images/);
+  assert.match(chainIssue([s(m({ humor_llm_providers: { slug: "anthropic", name: "Anthropic" } }))])!, /no connector for Anthropic/);
+  assert.match(chainIssue([s(m(), "Image: [image]\nDirection: none")])!, /no \{direction\}/);
+  console.log("PASS member chain checks.");
+}
