@@ -63,7 +63,7 @@ app.stdout.on("data", (d) => (log += d)); app.stderr.on("data", (d) => (log += d
 try {
   for (let i = 0; i < 60 && !log.includes("Ready"); i++) await new Promise((r) => setTimeout(r, 500));
   const get = (path, headers = {}) => fetch(`http://127.0.0.1:${APP_PORT}${path}`, { redirect: "manual", headers });
-  for (const path of ["/", "/users", "/users/" + MEMBER, "/posts", "/posts?source=handmade", "/posts/new", "/ai", "/ai/runs", "/team", "/rankings/posts?period=week", "/rankings/creators", "/rankings/most-posts", "/rankings/topics", "/rankings/ratings?sort=net", "/activity?action=cat:auth", "/activity?action=dislike&from=2026-10-01T00:00&to=2026-10-21T23:59"]) {
+  for (const path of ["/", "/users", "/users/" + MEMBER, "/posts", "/posts?source=handmade", "/posts/new", "/ai", "/ai/runs", "/team", "/rankings/posts?period=week", "/rankings/creators", "/rankings/most-posts", "/rankings/topics", "/rankings/ratings?sort=net", "/activity?action=cat:auth", "/prompt-chains", "/prompt-chains/mix", "/ai/responses", "/ai/media", "/catalog/terms", "/catalog/examples?q=butler", "/catalog/llm-models", "/catalog/llm-providers", "/catalog/signup-domains", "/catalog/whitelisted-emails", "/activity?action=dislike&from=2026-10-01T00:00&to=2026-10-21T23:59"]) {
     const anon = await get(path);
     assert.equal(anon.status, 307, `anonymous ${path}`);
     assert.match(anon.headers.get("location"), /\/login/);
@@ -82,6 +82,10 @@ try {
   assert.match(users, /@member/); assert.match(users, /Superadmin/);
   // Admins use the console but not team management.
   for (const path of ["/", "/posts", "/activity", "/rankings/posts"]) assert.equal((await get(path, { cookie: cookie(HELPER) })).status, 200, `admin ${path}`);
+  for (const path of ["/catalog/terms", "/prompt-chains/mix"]) assert.equal((await get(path, { cookie: cookie(HELPER) })).status, 200, `admin ${path}`);
+  assert.equal((await get("/catalog/not-a-table", { cookie: cookie(ADMIN) })).status, 404, "unknown catalog table");
+  const shortcut = await get("/terms", { cookie: cookie(ADMIN) });
+  assert.equal(shortcut.status, 307); assert.match(shortcut.headers.get("location"), /\/catalog\/terms$/);
   const team = await get("/team", { cookie: cookie(HELPER) });
   assert.match(team.headers.get("location") || "", /notice=superadmin-only/, "admins cannot open Team & access");
   assert.equal((await get("/team", { cookie: cookie(ADMIN) })).status, 200);

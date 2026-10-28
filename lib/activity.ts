@@ -12,6 +12,7 @@ export const ACTIONS: Record<string, string> = {
   save: "Saved a post", unsave: "Unsaved a post", report_post: "Reported a post", report_comment: "Reported a comment",
   onboard: "Finished onboarding", update_profile: "Updated their profile",
   request_superadmin: "Requested admin access", approve_request: "Approved an access request", reject_request: "Declined an access request",
+  catalog_insert: "Added a config record", catalog_update: "Changed a config record", catalog_delete: "Deleted a config record",
   grant_superadmin: "Made superadmin", revoke_superadmin: "Superadmin removed", grant_admin: "Made admin", revoke_admin: "Admin access removed",
 };
 export const describe = (action: string) => ACTIONS[action] ?? action.replace(/_/g, " ");
@@ -27,6 +28,7 @@ export function detailText(action: string, detail: Record<string, unknown>) {
   if (typeof detail.username === "string") parts.push(`@${detail.username}`);
   if (detail.avatar === true) parts.push("new photo");
   if (typeof detail.switchedFrom === "string") parts.push(`switched from ${detail.switchedFrom}`);
+  if (typeof detail.table === "string") parts.push(`${String(detail.table).replace(/^humor_/, "").replace(/_/g, " ")}${typeof detail.label === "string" ? `: ${detail.label}` : ""}`);
   if (typeof detail.userAgent === "string") parts.push(browser(detail.userAgent));
   return parts.join(" · ");
 }

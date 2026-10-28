@@ -13,6 +13,30 @@ Superadmin console for **The Humor Project**. Source: [kaffy811/HumorProject-Adm
 | `/rankings/*` | **Hot posts** and **Hottest creators** read the member Top page's own database function (`humor_leaderboard`), so ranks are identical (week / month / all). Rule: more Ha first; equal Ha → the newer post first (migration `202610220001`). **Most posts** ranks members by live posts. **Topics** ranks Columbia vs New York City vs general student life by Ha, using transparent keyword matching (`lib/topics.ts`). |
 | `/activity` | **Activity log**: every sign-in/out, signup, upload, AI generation, publish/edit/delete/restore/purge, like/unlike/dislike/undislike (`humor_votes.value` 1 / −1, migration `202610240001`), comment/reply, heart, save, report, profile change and superadmin request/decision, with category tabs, action/member/time filters and links. Recorded by database triggers (`202610220002`), so the member site and this console are both covered; admin edits are credited to the admin. Each user page shows their latest actions. |
 | `/rankings/ratings`, `/rankings/votes`, `/rankings/hearts` (old `/votes` redirects) | **Read** votes, now inside Rankings & votes: per-post ratings (Ha, downvotes, net, Ha/day, Wilson confidence, comments — sortable), every Ha vote, every comment heart. |
+| `/prompt-chains`, `/prompt-chains/[id]` | **Read** prompt chains and their steps (system/user prompt, model, output schema), with real run counts and success rate per chain (matched on `humor_generations.prompt_version`). |
+| `/prompt-chains/mix` | **Read / update** the prompt chain mix: share of new requests per chain, saved atomically by `humor_set_prompt_chain_mix()`, which rejects totals other than 100%. The member app does not read the mix yet. |
+| `/ai/runs` | **Read** generation requests (who, model, prompt version, tokens, latency, post). |
+| `/ai/responses` | **Read** LLM responses: the four captions and styles each call returned, scene, tokens in/out/thinking, latency, failure stage. |
+| `/ai/media` | **Read / view** AI-generated media: every AI-captioned photo with its captions and the post published from it. |
+| `/catalog/terms`, `/catalog/examples`, `/catalog/llm-models`, `/catalog/llm-providers`, `/catalog/signup-domains`, `/catalog/whitelisted-emails` (short links `/terms`, `/examples`, …) | **Create / read / update / delete** terms, AI generation examples, LLM models, LLM providers, allowed sign-up domains and whitelisted emails. One definition per table in `lib/catalog.ts` drives the list, search, forms, validation (mirrors the SQL checks) and server actions. Deleting a provider that still has models is refused. Every change is written to the activity log. The member app does not enforce the domain and email lists yet. |
+
+## Week 7 checklist
+
+| Requirement | Where |
+| --- | --- |
+| Read users | `/users`, `/users/[id]` |
+| Read prompt chains / prompt chain steps | `/prompt-chains`, `/prompt-chains/[id]` |
+| Read / update prompt chain mix | `/prompt-chains/mix` |
+| CRUD terms | `/catalog/terms` |
+| Read / view AI generated media | `/ai/media` |
+| Read generation requests | `/ai/runs` |
+| CRUD AI generation examples | `/catalog/examples` |
+| CRUD LLM models / LLM providers | `/catalog/llm-models`, `/catalog/llm-providers` |
+| Read LLM responses | `/ai/responses` |
+| CRUD allowed sign-up domains / whitelisted emails | `/catalog/signup-domains`, `/catalog/whitelisted-emails` |
+| CRUD images, including upload | `/posts/new` (upload), `/posts/[id]` (edit, delete, restore, purge) |
+
+The new tables come from migration `supabase/migrations/202610280001_admin_catalog.sql` in kaffy811/HumorProject (tested by `node tests/admin-catalog-database.mjs` there). It seeds the Gemini provider and model, one prompt chain per prompt version already recorded (with that version's newest prompts), the current `caption-styles-v3` prompt, a 100% mix on it, campus terms and columbia.edu / barnard.edu. Until the migration is applied, these pages show a notice saying what to run.
 
 ## Roles
 
