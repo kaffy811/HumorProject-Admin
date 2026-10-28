@@ -171,7 +171,7 @@ assert.equal(nyLocalToIso("bad"), null);
 console.log("PASS New York time range parsing.");
 
 // Catalog tables: validation mirrors the migration's checks.
-import { catalogPath, dbErrorMessage, isMissingTable, parseMix, parseRecord, resource, RESOURCES, shareOf } from "../lib/catalog";
+import { catalogPath, dbErrorMessage, isMissingTable, parseMix, parseRecord, resource, RESOURCES, shareOf, STEP_RESOURCE } from "../lib/catalog";
 const terms = resource("terms")!, models = resource("llm-models")!, providers = resource("llm-providers")!;
 const domains = resource("signup-domains")!, emails = resource("whitelisted-emails")!, examples = resource("examples")!;
 assert.equal(resource("profiles"), null, "only listed tables are editable");
@@ -213,4 +213,17 @@ assert.equal(parseMix([a, b], form({ [`share:${a}`]: "-10", [`share:${b}`]: "110
 assert.equal(parseMix([], form({})).ok, false);
 assert.equal(shareOf({ share: 40 }), 40); assert.equal(shareOf([{ share: 5 }]), 5); assert.equal(shareOf(null), 0);
 assert.equal(detailText("catalog_insert", { table: "humor_allowed_signup_domains", label: "columbia.edu" }), "allowed signup domains: columbia.edu");
+// Prompt chains and their steps.
+const chainDef = resource("prompt-chains", "ai")!;
+assert.equal(catalogPath(chainDef, "x"), "/ai/prompt-chains/x");
+assert.deepEqual(parseRecord(chainDef, form({ name: " Challenger ", prompt_version: "caption-styles-v4", description: "" })), { ok: true, value: { name: "Challenger", prompt_version: "caption-styles-v4", description: null } });
+assert.equal(parseRecord(chainDef, form({ name: "x", prompt_version: "Caption Styles" })).ok, false, "versions are lowercase slugs");
+assert.equal(resource("prompt-chain-steps"), null, "steps are not a tab");
+const step = (extra: Record<string, string>) => parseRecord(STEP_RESOURCE, form({ position: "1", name: "Caption", system_prompt: "sys", user_prompt: "Image: [image]", ...extra }));
+assert.deepEqual(step({ output_schema: ' {"type":"object"} ' }), { ok: true, value: { position: 1, name: "Caption", llm_model_id: null, system_prompt: "sys", user_prompt: "Image: [image]", output_schema: { type: "object" } } });
+assert.equal(step({}).ok && (step({}) as { value: Record<string, unknown> }).value.output_schema, null, "schema is optional");
+assert.match((step({ output_schema: "{nope" }) as { error: string }).error, /not valid JSON/);
+assert.match((step({ output_schema: "[1,2]" }) as { error: string }).error, /JSON object/);
+assert.equal(step({ position: "0" }).ok, false); assert.equal(step({ position: "21" }).ok, false);
+assert.equal(step({ system_prompt: " " }).ok, false);
 console.log("PASS catalog validation, database error messages and prompt-chain mix.");

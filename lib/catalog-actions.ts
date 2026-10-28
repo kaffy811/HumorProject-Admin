@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin, requireSuperadmin } from "./admin";
-import { catalogPath, dbErrorMessage, parseMix, parseRecord, resource } from "./catalog";
+import { catalogPath, dbErrorMessage, parseMix, parseRecord, resource, STEP_RESOURCE } from "./catalog";
 import { serviceClient } from "./supabase/service";
 
 export type CatalogState = { error?: string; ok?: string } | null;
@@ -45,7 +45,13 @@ export async function deleteRecord(form: FormData) {
   const { admin, def } = await authorize(form);
   const id = String(form.get("id") ?? "");
   if (!def || !UUID.test(id)) redirect("/");
-  const { error } = await serviceClient(admin.id).from(def.table).delete().eq("id", id);
+  const db = serviceClient(admin.id);
+  // A chain still receiving traffic would leave the mix below 100%.
+  if (def.slug === "prompt-chains") {
+    const { data: mix } = await db.from("humor_prompt_chain_mix").select("share").eq("chain_id", id).maybeSingle();
+    if (mix?.share) redirect(`${catalogPath(def, id)}?blocked=mix`);
+  }
+  const { error } = await db.from(def.table).delete().eq("id", id);
   if (error?.code === "23503") redirect(`${catalogPath(def, id)}?blocked=1`);
   if (error) throw new Error(error.message);
   revalidatePath(catalogPath(def));
@@ -64,4 +70,33 @@ export async function updateMix(_: CatalogState, form: FormData): Promise<Catalo
   if (error) return { error: error.message };
   revalidatePath("/ai/prompt-chains", "layout");
   return { ok: "Mix saved." };
+}
+
+// Steps are created and edited on their chain's page.
+export async function saveStep(_: CatalogState, form: FormData): Promise<CatalogState> {
+  const admin = await requireAdmin();
+  const chainId = String(form.get("chain_id") ?? "");
+  const id = String(form.get("id") ?? "");
+  if (!UUID.test(chainId) || (id && !UUID.test(id))) return { error: "Unknown step." };
+  const parsed = parseRecord(STEP_RESOURCE, form);
+  if (!parsed.ok) return { error: parsed.error };
+  const db = serviceClient(admin.id).from(STEP_RESOURCE.table);
+  const { data, error } = id
+    ? await db.update(parsed.value).eq("id", id).eq("chain_id", chainId).select("id").maybeSingle()
+    : await db.insert({ ...parsed.value, chain_id: chainId }).select("id").single();
+  if (error) return { error: dbErrorMessage(STEP_RESOURCE, error) };
+  if (!data) return { error: "This step no longer exists." };
+  revalidatePath(`/ai/prompt-chains/${chainId}`);
+  return { ok: id ? "Step saved." : "Step added." };
+}
+
+export async function deleteStep(form: FormData) {
+  const admin = await requireAdmin();
+  const chainId = String(form.get("chain_id") ?? "");
+  const id = String(form.get("id") ?? "");
+  if (!UUID.test(chainId) || !UUID.test(id)) redirect("/ai/prompt-chains");
+  const { error } = await serviceClient(admin.id).from(STEP_RESOURCE.table).delete().eq("id", id).eq("chain_id", chainId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/ai/prompt-chains/${chainId}`);
+  redirect(`/ai/prompt-chains/${chainId}?step=deleted`);
 }
