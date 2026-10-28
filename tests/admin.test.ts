@@ -171,7 +171,7 @@ assert.equal(nyLocalToIso("bad"), null);
 console.log("PASS New York time range parsing.");
 
 // Catalog tables: validation mirrors the migration's checks.
-import { catalogPath, dbErrorMessage, isMissingTable, parseMix, parseRecord, resource, RESOURCES, shareOf, STEP_RESOURCE } from "../lib/catalog";
+import { catalogPath, dbErrorMessage, isMissingTable, parseRecord, resource, RESOURCES, shareOf, STEP_RESOURCE } from "../lib/catalog";
 const terms = resource("terms")!, models = resource("llm-models")!, providers = resource("llm-providers")!;
 const domains = resource("signup-domains")!, emails = resource("whitelisted-emails")!, examples = resource("examples")!;
 assert.equal(resource("profiles"), null, "only listed tables are editable");
@@ -206,12 +206,6 @@ assert.equal(dbErrorMessage(domains, { code: "23505", message: "dup" }), "That d
 assert.match(dbErrorMessage(providers, { code: "23503", message: "fk" }), /still has models/);
 assert.equal(isMissingTable({ code: "PGRST205", message: "Could not find the table" }), true);
 assert.equal(isMissingTable({ code: "23505", message: "dup" }), false);
-const a = "33333333-3333-4333-8333-333333333333", b = "44444444-4444-4444-8444-444444444444";
-assert.deepEqual(parseMix([a, b], form({ [`share:${a}`]: "80", [`share:${b}`]: "20" })), { ok: true, shares: { [a]: 80, [b]: 20 } });
-assert.equal(parseMix([a, b], form({ [`share:${a}`]: "80", [`share:${b}`]: "10" })).ok, false, "must total 100");
-assert.equal(parseMix([a, b], form({ [`share:${a}`]: "99.5", [`share:${b}`]: "0.5" })).ok, false, "whole numbers");
-assert.equal(parseMix([a, b], form({ [`share:${a}`]: "-10", [`share:${b}`]: "110" })).ok, false);
-assert.equal(parseMix([], form({})).ok, false);
 assert.equal(shareOf({ share: 40 }), 40); assert.equal(shareOf([{ share: 5 }]), 5); assert.equal(shareOf(null), 0);
 assert.equal(detailText("catalog_insert", { table: "humor_allowed_signup_domains", label: "columbia.edu" }), "allowed signup domains: columbia.edu");
 // Prompt chains and their steps.
@@ -227,7 +221,7 @@ assert.match((step({ output_schema: "{nope" }) as { error: string }).error, /not
 assert.match((step({ output_schema: "[1,2]" }) as { error: string }).error, /JSON object/);
 assert.equal(step({ position: "0" }).ok, false); assert.equal(step({ position: "21" }).ok, false);
 assert.equal(step({ system_prompt: " " }).ok, false);
-console.log("PASS catalog validation, database error messages and prompt-chain mix.");
+console.log("PASS catalog validation and database error messages.");
 
 // Provider connectors with a fake fetch: request shape, parsing, errors, no network.
 import { fillUserPrompt, parseCaptions, runCaptions, type RunInput } from "../lib/llm";

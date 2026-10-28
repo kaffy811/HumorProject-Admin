@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin, requireSuperadmin } from "./admin";
-import { catalogPath, dbErrorMessage, parseMix, parseRecord, resource, STEP_RESOURCE, type Resource } from "./catalog";
+import { catalogPath, dbErrorMessage, parseRecord, resource, STEP_RESOURCE, type Resource } from "./catalog";
 import { chainIssue, type ChainStep } from "./chain-check";
 import { serviceClient } from "./supabase/service";
 
@@ -65,20 +65,6 @@ export async function deleteRecord(form: FormData) {
   redirect(`${catalogPath(def)}?deleted=1`);
 }
 
-// Replaces the whole mix in one database call, which re-checks the 100% total.
-export async function updateMix(_: CatalogState, form: FormData): Promise<CatalogState> {
-  const admin = await requireAdmin();
-  const db = serviceClient(admin.id);
-  const { data: chains, error: read } = await db.from("humor_prompt_chains").select("id");
-  if (read) return { error: read.message };
-  const parsed = parseMix((chains ?? []).map((c) => c.id as string), form);
-  if (!parsed.ok) return { error: parsed.error };
-  const { error } = await db.rpc("humor_set_prompt_chain_mix", { shares: parsed.shares, actor: admin.id });
-  if (error) return { error: error.message };
-  revalidatePath("/ai/prompt-chains", "layout");
-  return { ok: "Mix saved." };
-}
-
 // Steps are created and edited on their chain's page.
 export async function saveStep(_: CatalogState, form: FormData): Promise<CatalogState> {
   const admin = await requireAdmin();
@@ -124,7 +110,28 @@ export async function chooseChainForMembers(_: CatalogState, form: FormData): Pr
   const shares = Object.fromEntries((chains ?? []).map((c) => [c.id as string, c.id === chosen ? 100 : 0]));
   const { error } = await db.rpc("humor_set_prompt_chain_mix", { shares, actor: admin.id });
   if (error) return { error: error.message };
-  revalidatePath("/ai/prompt-chains", "layout");
-  revalidatePath("/ai");
+  revalidateMemberPicker();
   return { ok: `Members now get ${chain.name}.` };
+}
+
+// The picker appears on Overview and LLM models & providers.
+function revalidateMemberPicker() {
+  revalidatePath("/ai");
+  revalidatePath("/ai/llm-models");
+  revalidatePath("/ai/prompt-chains", "layout");
+}
+
+// Delete button in the picker: removes the prompt chain and its steps (the
+// model stays in LLM models). The chain members are using cannot be deleted.
+export async function deleteChainFromPicker(_: CatalogState, form: FormData): Promise<CatalogState> {
+  const admin = await requireAdmin();
+  const id = String(form.get("id") ?? "");
+  if (!UUID.test(id)) return { error: "Unknown prompt chain." };
+  const db = serviceClient(admin.id);
+  const { data: mix } = await db.from("humor_prompt_chain_mix").select("share").eq("chain_id", id).maybeSingle();
+  if (mix?.share) return { error: "Members are using this one. Choose another model for members first." };
+  const { error } = await db.from("humor_prompt_chains").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidateMemberPicker();
+  return { ok: "Deleted." };
 }
