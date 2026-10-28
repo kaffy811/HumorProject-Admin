@@ -228,3 +228,45 @@ assert.match((step({ output_schema: "[1,2]" }) as { error: string }).error, /JSO
 assert.equal(step({ position: "0" }).ok, false); assert.equal(step({ position: "21" }).ok, false);
 assert.equal(step({ system_prompt: " " }).ok, false);
 console.log("PASS catalog validation, database error messages and prompt-chain mix.");
+
+// Provider connectors with a fake fetch: request shape, parsing, errors, no network.
+import { fillUserPrompt, parseCaptions, runCaptions, type RunInput } from "../lib/llm";
+void (async () => {
+  const four = JSON.stringify({ captions: [["A", "deadpan"], ["B", "roast"], ["C", "pun"], ["D", "absurd"]].map(([caption, style]) => ({ caption, style })) });
+  const calls: { url: string; init: RequestInit }[] = [];
+  const fake = (responses: { status: number; body: unknown }[]) => (async (url: string, init: RequestInit) => {
+    calls.push({ url, init });
+    const next = responses.shift()!;
+    return new Response(JSON.stringify(next.body), { status: next.status });
+  }) as unknown as typeof fetch;
+  const input: RunInput = { provider: "openai", model: "gpt-test", systemPrompt: "sys", userPrompt: fillUserPrompt("Image: [image]\nDirection: {direction}", ""), image: { base64: "QUJD", mime: "image/jpeg" }, maxOutputTokens: 512, temperature: null, schema: { type: "object" } };
+  assert.equal(input.userPrompt, "Image: [image]\nDirection: none");
+
+  const openai = await runCaptions(input, { OPENAI_API_KEY: "sk-test" }, fake([{ status: 200, body: { choices: [{ message: { content: four } }], usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 } } }]));
+  assert.equal(openai.ok, true); assert.equal(openai.captions.length, 4); assert.deepEqual(openai.warnings, []); assert.deepEqual(openai.usage, { input: 10, output: 5, total: 15 });
+  const sent = JSON.parse(String(calls[0].init.body));
+  assert.equal(calls[0].url, "https://api.openai.com/v1/chat/completions");
+  assert.equal((calls[0].init.headers as Record<string, string>).Authorization, "Bearer sk-test");
+  assert.equal(sent.model, "gpt-test"); assert.equal(sent.max_completion_tokens, 512); assert.equal("temperature" in sent, false, "temperature only when set");
+  assert.equal(sent.response_format.type, "json_schema"); assert.equal(sent.messages[1].content[1].image_url.url, "data:image/jpeg;base64,QUJD");
+
+  calls.length = 0;
+  const fallback = await runCaptions(input, { OPENAI_API_KEY: "k" }, fake([{ status: 400, body: { error: { message: "Invalid schema for response_format" } } }, { status: 200, body: { choices: [{ message: { content: four } }] } }]));
+  assert.equal(fallback.ok, true, "schema rejection retries in JSON mode"); assert.equal(JSON.parse(String(calls[1].init.body)).response_format.type, "json_object");
+
+  const denied = await runCaptions(input, { OPENAI_API_KEY: "k" }, fake([{ status: 401, body: { error: { message: "Incorrect API key" } } }]));
+  assert.equal(denied.ok, false); assert.match(denied.error!, /HTTP 401: Incorrect API key/);
+  assert.match((await runCaptions(input, {}, fake([]))).error!, /OPENAI_API_KEY is not set/);
+  assert.match((await runCaptions({ ...input, provider: "anthropic" }, {}, fake([]))).error!, /No connector for provider "anthropic"/);
+
+  calls.length = 0;
+  const gemini = await runCaptions({ ...input, provider: "google", model: "gemini-x", temperature: 0.7 }, { GEMINI_API_KEY: "g" }, fake([{ status: 200, body: { candidates: [{ finishReason: "STOP", content: { parts: [{ text: "thinking", thought: true }, { text: four }] } }], usageMetadata: { promptTokenCount: 7, candidatesTokenCount: 3, totalTokenCount: 10 } } }]));
+  assert.equal(gemini.ok, true); assert.equal(gemini.rawText, four, "thought parts are dropped"); assert.deepEqual(gemini.usage, { input: 7, output: 3, total: 10 });
+  const gsent = JSON.parse(String(calls[0].init.body));
+  assert.match(calls[0].url, /models\/gemini-x:generateContent$/); assert.equal(gsent.generationConfig.temperature, 0.7); assert.deepEqual(gsent.generationConfig.responseJsonSchema, { type: "object" });
+
+  assert.equal(parseCaptions("not json").ok, false);
+  assert.equal(parseCaptions('```json\n' + four + '\n```').ok, true, "code fences are tolerated");
+  assert.deepEqual(parseCaptions(JSON.stringify({ captions: [{ caption: "x", style: "pun" }, { caption: "y", style: "pun" }] })).warnings, ["Expected 4 captions, got 2.", "Styles repeat."]);
+  console.log("PASS provider connectors (OpenAI, Gemini), schema fallback and caption checks.");
+})().catch((error) => { console.error(error); process.exit(1); });

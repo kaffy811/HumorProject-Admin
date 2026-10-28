@@ -7,6 +7,7 @@ const TABS = [
   { href: "/ai/llm-models", label: "LLM models & providers" },
   { href: "/ai/terms", label: "Terms" },
   { href: "/ai/examples", label: "Generation examples" },
+  { href: "/ai/test-run", label: "Test run" },
 ];
 export default function AiLayout({ children }: { children: React.ReactNode }) {
   return <><SectionTabs label="AI models & prompts" tabs={TABS} />{children}</>;

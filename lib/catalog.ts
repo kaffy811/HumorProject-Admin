@@ -86,7 +86,7 @@ export const RESOURCES: Resource[] = [
   },
   {
     section: "ai", slug: "llm-providers", table: "humor_llm_providers", title: "LLM providers", singular: "provider",
-    description: "Companies or services that host the models. The slug matches humor_generations.provider on recorded runs.",
+    description: "Companies or services that host the models. The slug matches humor_generations.provider on recorded runs. Test run can call providers with slug google or openai.",
     fields: [
       { name: "name", label: "Name", kind: "text", required: true, max: 80, list: true },
       { name: "slug", label: "Slug", kind: "text", required: true, max: 40, pattern: /^[a-z0-9][a-z0-9-]{1,39}$/, patternHint: "2–40 lowercase letters, digits or dashes", mono: true, list: true },
