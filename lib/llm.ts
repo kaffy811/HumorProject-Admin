@@ -9,7 +9,7 @@ export type RunInput = {
 };
 export type RunCaption = { caption: string; style: string };
 export type RunResult = {
-  ok: boolean; error?: string; captions: RunCaption[]; warnings: string[];
+  ok: boolean; error?: string; captions: RunCaption[]; warnings: string[]; description?: string;
   usage: { input: number; output: number; total: number }; latencyMs: number; rawText: string;
 };
 type Fetch = typeof fetch;
@@ -108,17 +108,29 @@ async function callOpenAIOnce(input: RunInput, key: string, fetcher: Fetch) {
 }
 
 // Lenient: shows whatever captions came back and lists what the member app would reject.
-export function parseCaptions(text: string): Pick<RunResult, "ok" | "error" | "captions" | "warnings"> {
+// Accepts both formats chains have used: objects {caption, style} (caption-styles-v3)
+// and plain strings plus a scene description (campus-nyc-v1).
+export function parseCaptions(text: string): Pick<RunResult, "ok" | "error" | "captions" | "warnings" | "description"> {
   let value: unknown;
   try { value = JSON.parse(text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "")); } catch { return { ok: false, error: "The response was not valid JSON.", captions: [], warnings: [] }; }
   const list = (value as { captions?: unknown })?.captions;
   if (!Array.isArray(list)) return { ok: false, error: 'The response has no "captions" list.', captions: [], warnings: [] };
-  const captions = list.map((item) => ({ caption: String((item as RunCaption)?.caption ?? "").trim(), style: String((item as RunCaption)?.style ?? "").trim() }));
+  const captions = list.map((item) => {
+    if (typeof item === "string") return { caption: item.trim(), style: "" };
+    const c = (item ?? {}) as Record<string, unknown>;
+    return { caption: String(c.caption ?? c.text ?? "").trim(), style: String(c.style ?? "").trim() };
+  });
+  const rawDescription = (value as { description?: unknown }).description;
+  const description = typeof rawDescription === "string" && rawDescription.trim() ? rawDescription.trim() : undefined;
+  const styled = captions.some((c) => c.style);
   const warnings: string[] = [];
   if (captions.length !== 4) warnings.push(`Expected 4 captions, got ${captions.length}.`);
   if (captions.some((c) => !c.caption)) warnings.push("Some captions are empty.");
   if (captions.some((c) => [...c.caption].length > 200)) warnings.push("Some captions are longer than 200 characters.");
-  if (captions.some((c) => !STYLES.includes(c.style.toLowerCase()))) warnings.push(`Some styles are not one of: ${STYLES.join(", ")}.`);
-  if (new Set(captions.map((c) => c.style.toLowerCase())).size !== captions.length) warnings.push("Styles repeat.");
-  return { ok: true, captions, warnings };
+  if (!styled) warnings.push("No joke styles returned: this chain's format has none, so the member app's caption-styles-v3 check would reject it.");
+  else {
+    if (captions.some((c) => !STYLES.includes(c.style.toLowerCase()))) warnings.push(`Some styles are not one of: ${STYLES.join(", ")}.`);
+    if (new Set(captions.map((c) => c.style.toLowerCase())).size !== captions.length) warnings.push("Styles repeat.");
+  }
+  return { ok: true, captions, warnings, description };
 }
