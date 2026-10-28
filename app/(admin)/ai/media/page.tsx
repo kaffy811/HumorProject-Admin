@@ -28,8 +28,7 @@ export default async function AiMedia({ searchParams }: { searchParams: Promise<
   const postByImage = new Map(((posts.data ?? []) as { id: string; image_id: string; content: string; deleted_at: string | null }[]).map((p) => [p.image_id, p]));
   return (
     <div>
-      <Link href="/ai" className="muted">← Models &amp; prompts</Link>
-      <header className="page-head" style={{ marginTop: 12 }}>
+      <header className="page-head">
         <div>
           <span className="eyebrow">Read · view · AI output</span>
           <h1>AI generated media.</h1>

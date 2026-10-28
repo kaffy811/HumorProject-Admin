@@ -171,10 +171,14 @@ assert.equal(nyLocalToIso("bad"), null);
 console.log("PASS New York time range parsing.");
 
 // Catalog tables: validation mirrors the migration's checks.
-import { dbErrorMessage, isMissingTable, parseMix, parseRecord, resource, RESOURCES, shareOf } from "../lib/catalog";
+import { catalogPath, dbErrorMessage, isMissingTable, parseMix, parseRecord, resource, RESOURCES, shareOf } from "../lib/catalog";
 const terms = resource("terms")!, models = resource("llm-models")!, providers = resource("llm-providers")!;
 const domains = resource("signup-domains")!, emails = resource("whitelisted-emails")!, examples = resource("examples")!;
 assert.equal(resource("profiles"), null, "only listed tables are editable");
+assert.equal(resource("terms", "team"), null, "terms are an AI tab");
+assert.equal(resource("signup-domains", "ai"), null, "sign-up lists are a Team tab");
+assert.equal(catalogPath(terms), "/ai/terms"); assert.equal(catalogPath(domains, "x"), "/team/signup-domains/x");
+assert.deepEqual(RESOURCES.filter((r) => r.section === "team").map((r) => r.slug), ["signup-domains", "whitelisted-emails"]);
 assert.equal(new Set(RESOURCES.map((r) => r.slug)).size, RESOURCES.length);
 assert.deepEqual(parseRecord(terms, form({ term: " Butler ", definition: "Library", example: " ", category: "campus" })), { ok: true, value: { term: "Butler", definition: "Library", example: null, category: "campus" } });
 assert.equal(parseRecord(terms, form({ term: "", definition: "x", category: "campus" })).ok, false);

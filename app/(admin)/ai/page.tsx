@@ -21,11 +21,7 @@ export default async function Ai() {
           <h1>Models &amp; prompts.</h1>
           <p>Every caption-generation run, grouped by provider and model, plus the prompt versions behind them. New providers and models show up here automatically as soon as their runs are recorded.</p>
         </div>
-        <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Link className="btn" href="/prompt-chains">Prompt chains</Link>
-          <Link className="btn" href="/ai/responses">LLM responses</Link>
-          <Link className="btn btn-primary" href="/ai/runs">Generation requests →</Link>
-        </span>
+        <Link className="btn btn-primary" href="/ai/runs">All runs →</Link>
       </header>
 
       <section className="grid grid-kpi" aria-label="Totals">

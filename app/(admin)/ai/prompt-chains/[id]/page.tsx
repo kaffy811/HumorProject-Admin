@@ -32,14 +32,14 @@ export default async function PromptChain({ params }: { params: Promise<{ id: st
   const stepRows = (steps ?? []) as unknown as Step[];
   return (
     <div className="stack">
-      <Link href="/prompt-chains" className="muted">← All prompt chains</Link>
+      <Link href="/ai/prompt-chains" className="muted">← All prompt chains</Link>
       <header className="page-head" style={{ marginBottom: 0 }}>
         <div>
           <span className="eyebrow">Prompt chain · <span className="mono">{chain.prompt_version}</span></span>
           <h1>{chain.name}.</h1>
           <p>{chain.description ?? "No description."}</p>
         </div>
-        <Link className="btn" href="/prompt-chains/mix">Mix: {shareOf(chain.humor_prompt_chain_mix)}% →</Link>
+        <Link className="btn" href="/ai/prompt-chains/mix">Mix: {shareOf(chain.humor_prompt_chain_mix)}% →</Link>
       </header>
       <section className="card">
         <h2>Steps</h2>
@@ -51,7 +51,7 @@ export default async function PromptChain({ params }: { params: Promise<{ id: st
                 <span className="badge badge-brand">Step {step.position}</span><b>{step.name}</b>
                 <span className="muted">
                   {step.humor_llm_models
-                    ? <Link href={`/catalog/llm-models/${step.humor_llm_models.id}`}>{step.humor_llm_models.display_name}</Link>
+                    ? <Link href={`/ai/llm-models/${step.humor_llm_models.id}`}>{step.humor_llm_models.display_name}</Link>
                     : "No model"}
                   {step.humor_llm_models?.humor_llm_providers && ` · ${step.humor_llm_models.humor_llm_providers.name}`} · updated {when(step.updated_at)}
                 </span>
@@ -87,7 +87,7 @@ export default async function PromptChain({ params }: { params: Promise<{ id: st
           <dl className="kv">
             <dt>Created</dt><dd>{when(chain.created_at)}</dd>
             <dt>Updated</dt><dd>{when(chain.updated_at)}</dd>
-            <dt>Examples</dt><dd><Link href="/catalog/examples">{n(examples ?? 0)} written for this chain →</Link></dd>
+            <dt>Examples</dt><dd><Link href="/ai/examples">{n(examples ?? 0)} written for this chain →</Link></dd>
             <dt>ID</dt><dd className="mono">{chain.id}</dd>
           </dl>
         </div>

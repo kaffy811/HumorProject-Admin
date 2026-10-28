@@ -1,8 +1,7 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin";
-import { isMissingTable, resource, type Field } from "@/lib/catalog";
+import { requireAdmin, requireSuperadmin } from "@/lib/admin";
+import { catalogPath, isMissingTable, resource, type Field, type Resource } from "@/lib/catalog";
 import { refOptions } from "@/lib/catalog-data";
 import { PAGE_SIZE, searchTerm } from "@/lib/data";
 import { serviceClient } from "@/lib/supabase/service";
@@ -11,15 +10,15 @@ import { CatalogForm } from "@/components/CatalogForm";
 import { MissingTable } from "@/components/MissingTable";
 import { Pager } from "@/components/Pager";
 
-type Params = Promise<{ resource: string }>;
-export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  return { title: resource((await params).resource)?.title ?? "Not found" };
-}
+export type ListSearch = Promise<{ q?: string; page?: string; deleted?: string }>;
+export const catalogTitle = async (section: Resource["section"], params: Promise<{ resource: string }>) => ({ title: resource((await params).resource, section)?.title ?? "Not found" });
 
-export default async function CatalogList({ params, searchParams }: { params: Params; searchParams: Promise<{ q?: string; page?: string; deleted?: string }> }) {
-  await requireAdmin();
-  const def = resource((await params).resource);
+// List + search + create form for one catalog table, shown as a tab of its section.
+export async function CatalogList({ section, params, searchParams }: { section: Resource["section"]; params: Promise<{ resource: string }>; searchParams: ListSearch }) {
+  await (section === "team" ? requireSuperadmin() : requireAdmin());
+  const def = resource((await params).resource, section);
   if (!def) notFound();
+  const base = catalogPath(def);
   const query = await searchParams;
   const q = searchTerm(text(query.q));
   const page = clampPage(query.page);
@@ -50,7 +49,7 @@ export default async function CatalogList({ params, searchParams }: { params: Pa
           <form className="toolbar" role="search">
             <input className="input" name="q" defaultValue={q} placeholder={`Search ${def.title.toLowerCase()}`} aria-label={`Search ${def.title.toLowerCase()}`} />
             <button className="btn" type="submit">Search</button>
-            {q && <Link className="btn" href={`/catalog/${def.slug}`}>Clear</Link>}
+            {q && <Link className="btn" href={base}>Clear</Link>}
           </form>
           <div className="table-wrap">
             <table>
@@ -60,18 +59,18 @@ export default async function CatalogList({ params, searchParams }: { params: Pa
                   <tr key={String(row.id)}>
                     {columns.map((c, i) => (
                       <td key={c.name}>
-                        {i === 0 ? <Link href={`/catalog/${def.slug}/${row.id}`} className={c.mono ? "mono" : "clip"} style={{ fontWeight: 700 }}>{display(c, row[c.name], labels[c.name])}</Link> : display(c, row[c.name], labels[c.name])}
+                        {i === 0 ? <Link href={catalogPath(def, String(row.id))} className={c.mono ? "mono" : "clip"} style={{ fontWeight: 700 }}>{display(c, row[c.name], labels[c.name])}</Link> : display(c, row[c.name], labels[c.name])}
                       </td>
                     ))}
                     <td className="muted">{when(String(row.updated_at ?? row.created_at ?? ""))}</td>
-                    <td><Link className="btn" href={`/catalog/${def.slug}/${row.id}`}>Edit</Link></td>
+                    <td><Link className="btn" href={catalogPath(def, String(row.id))}>Edit</Link></td>
                   </tr>
                 ))}
                 {!rows.length && <tr><td colSpan={columns.length + 2} className="empty">{q ? "Nothing matches." : `No ${def.title.toLowerCase()} yet.`}</td></tr>}
               </tbody>
             </table>
           </div>
-          <Pager page={page} total={count ?? 0} size={PAGE_SIZE} base={`/catalog/${def.slug}`} params={{ q }} />
+          <Pager page={page} total={count ?? 0} size={PAGE_SIZE} base={base} params={{ q }} />
         </div>
       )}
     </div>

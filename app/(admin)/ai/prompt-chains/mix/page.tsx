@@ -23,7 +23,7 @@ export default async function PromptChainMix() {
   const editor = latest?.updated_by ? (await profilesByIds(db, [latest.updated_by])).get(latest.updated_by) ?? null : null;
   return (
     <div>
-      <Link href="/prompt-chains" className="muted">← Prompt chains</Link>
+      <Link href="/ai/prompt-chains" className="muted">← Prompt chains</Link>
       <header className="page-head" style={{ marginTop: 12 }}>
         <div>
           <span className="eyebrow">Read · update · <span className="mono">humor_prompt_chain_mix</span></span>

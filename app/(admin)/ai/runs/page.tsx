@@ -33,8 +33,7 @@ export default async function Runs({ searchParams }: { searchParams: Search }) {
   const postByImage = new Map(((posts.data ?? []) as { id: string; image_id: string }[]).map((p) => [p.image_id, p.id]));
   return (
     <div>
-      <Link href="/ai" className="muted">← Models &amp; prompts</Link>
-      <header className="page-head" style={{ marginTop: 12 }}>
+      <header className="page-head">
         <div>
           <span className="eyebrow">Read · <span className="mono">humor_generations</span></span>
           <h1>Generation requests.</h1>

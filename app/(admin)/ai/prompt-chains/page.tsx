@@ -36,7 +36,7 @@ export default async function PromptChains() {
           <h1>Prompt chains.</h1>
           <p>Each chain is a versioned recipe of LLM steps that turns a photo into four captions. Its prompt version is stamped on every run, so usage below is real.</p>
         </div>
-        <Link className="btn btn-primary" href="/prompt-chains/mix">Edit mix</Link>
+        <Link className="btn btn-primary" href="/ai/prompt-chains/mix">Edit mix</Link>
       </header>
       {error ? <MissingTable table="humor_prompt_chains" /> : (
         <div className="table-wrap">
@@ -47,7 +47,7 @@ export default async function PromptChains() {
                 const u = usage.get(c.prompt_version) ?? { runs: 0, completed: 0, last: null };
                 return (
                   <tr key={c.id}>
-                    <td><Link href={`/prompt-chains/${c.id}`} style={{ fontWeight: 700 }}>{c.name}</Link>{c.description && <><br /><span className="muted clip" style={{ fontSize: 12 }}>{c.description}</span></>}</td>
+                    <td><Link href={`/ai/prompt-chains/${c.id}`} style={{ fontWeight: 700 }}>{c.name}</Link>{c.description && <><br /><span className="muted clip" style={{ fontSize: 12 }}>{c.description}</span></>}</td>
                     <td className="mono">{c.prompt_version}</td>
                     <td className="r num">{n(c.humor_prompt_chain_steps.length)}</td>
                     <td className="r num">{shareOf(c.humor_prompt_chain_mix) ? <b>{shareOf(c.humor_prompt_chain_mix)}%</b> : <span className="muted">0%</span>}</td>

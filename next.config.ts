@@ -8,9 +8,6 @@ const nextConfig: NextConfig = {
     return [
       { source: "/media", destination: "/posts", permanent: false },
       { source: "/media/:path*", destination: "/posts/:path*", permanent: false },
-      // Short links to the catalog tables.
-      ...["terms", "examples", "llm-models", "llm-providers", "signup-domains", "whitelisted-emails"].map((slug) => ({ source: `/${slug}`, destination: `/catalog/${slug}`, permanent: false })),
-      { source: "/catalog", destination: "/prompt-chains", permanent: false },
     ];
   },
   async headers() {

@@ -201,9 +201,10 @@ details.card summary { list-style: none; }
 .login-mascot { width: 128px; height: 128px; object-fit: contain; margin: -82px auto 0; display: block; }
 .login-card .btn-primary { min-height: 50px; font-size: 15px; }
 
+/* Section tabs (AI models & prompts, Team & access) wrap instead of hiding tabs off-screen. */
+.tabs-wrap { flex-wrap: wrap; gap: 0 20px; overflow: visible; }
+
 /* AI media gallery */
 .gallery { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }
 .gallery-item { display: grid; gap: 8px; align-content: start; }
 .gallery-image { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border: 2px solid var(--ink); background: var(--soft); }
-.nav-section { margin: 10px 0 2px; padding: 0 10px; font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-@media (max-width: 860px) { .nav-section { display: none; } }

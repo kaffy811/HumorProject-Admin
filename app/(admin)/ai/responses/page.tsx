@@ -28,8 +28,7 @@ export default async function Responses({ searchParams }: { searchParams: Search
   const rows = (data ?? []) as Row[];
   return (
     <div>
-      <Link href="/ai" className="muted">← Models &amp; prompts</Link>
-      <header className="page-head" style={{ marginTop: 12 }}>
+      <header className="page-head">
         <div>
           <span className="eyebrow">Read · <span className="mono">humor_generations</span> responses</span>
           <h1>LLM responses.</h1>

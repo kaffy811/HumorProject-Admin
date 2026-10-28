@@ -12,6 +12,8 @@ export type Field = {
   hint?: string; list?: boolean; mono?: boolean;
 };
 export type Resource = {
+  // Where it lives: a tab of "AI models & prompts" or of "Team & access" (superadmin only).
+  section: "ai" | "team";
   slug: string; table: string; title: string; singular: string; description: string;
   fields: Field[]; order: { column: string; ascending: boolean }; search: string[];
   // Shown when the unique constraint fires.
@@ -28,7 +30,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const RESOURCES: Resource[] = [
   {
-    slug: "terms", table: "humor_terms", title: "Terms", singular: "term",
+    section: "ai", slug: "terms", table: "humor_terms", title: "Terms", singular: "term",
     description: "Campus and city vocabulary the caption prompt leans on (Butler, Low Steps, the 1 train…). Keep definitions short and true.",
     fields: [
       { name: "term", label: "Term", kind: "text", required: true, max: 80, list: true },
@@ -39,7 +41,7 @@ export const RESOURCES: Resource[] = [
     order: { column: "term", ascending: true }, search: ["term", "definition"], unique: "That term already exists (terms are case-insensitive).",
   },
   {
-    slug: "examples", table: "humor_generation_examples", title: "AI generation examples", singular: "example",
+    section: "ai", slug: "examples", table: "humor_generation_examples", title: "AI generation examples", singular: "example",
     description: "Hand-picked examples of a scene and the caption that nails it, per joke style — the few-shot material for prompt chains.",
     fields: [
       { name: "caption", label: "Caption", kind: "textarea", required: true, max: 200, list: true },
@@ -52,7 +54,7 @@ export const RESOURCES: Resource[] = [
     order: { column: "created_at", ascending: false }, search: ["caption", "scene"], unique: "This example already exists.",
   },
   {
-    slug: "llm-models", table: "humor_llm_models", title: "LLM models", singular: "model",
+    section: "ai", slug: "llm-models", table: "humor_llm_models", title: "LLM models", singular: "model",
     description: "Models the caption pipeline can call. A prompt-chain step points at one of these.",
     fields: [
       { name: "display_name", label: "Name", kind: "text", required: true, max: 80, list: true },
@@ -67,7 +69,7 @@ export const RESOURCES: Resource[] = [
     order: { column: "display_name", ascending: true }, search: ["display_name", "model_id"], unique: "This provider already has a model with that API id.",
   },
   {
-    slug: "llm-providers", table: "humor_llm_providers", title: "LLM providers", singular: "provider",
+    section: "ai", slug: "llm-providers", table: "humor_llm_providers", title: "LLM providers", singular: "provider",
     description: "Companies or services that host the models. The slug matches humor_generations.provider on recorded runs.",
     fields: [
       { name: "name", label: "Name", kind: "text", required: true, max: 80, list: true },
@@ -79,7 +81,7 @@ export const RESOURCES: Resource[] = [
     inUse: "This provider still has models. Delete or move its models first.",
   },
   {
-    slug: "signup-domains", table: "humor_allowed_signup_domains", title: "Allowed sign-up domains", singular: "domain",
+    section: "team", slug: "signup-domains", table: "humor_allowed_signup_domains", title: "Allowed sign-up domains", singular: "domain",
     description: "Email domains allowed to sign up, e.g. columbia.edu. Subdomains are separate entries. The member app does not enforce this list yet: Google sign-in is still open to everyone.",
     fields: [
       { name: "domain", label: "Domain", kind: "domain", required: true, max: 253, mono: true, list: true },
@@ -88,7 +90,7 @@ export const RESOURCES: Resource[] = [
     order: { column: "domain", ascending: true }, search: ["domain", "note"], unique: "That domain is already allowed.", stampCreator: true,
   },
   {
-    slug: "whitelisted-emails", table: "humor_whitelisted_emails", title: "Whitelisted emails", singular: "email",
+    section: "team", slug: "whitelisted-emails", table: "humor_whitelisted_emails", title: "Whitelisted emails", singular: "email",
     description: "Individual addresses allowed in even when their domain is not on the allowed list (guests, alumni, reviewers). Not enforced by the member app yet.",
     fields: [
       { name: "email", label: "Email", kind: "email", required: true, max: 254, mono: true, list: true },
@@ -98,9 +100,10 @@ export const RESOURCES: Resource[] = [
   },
 ];
 
-export function resource(slug: string) {
-  return RESOURCES.find((r) => r.slug === slug) ?? null;
+export function resource(slug: string, section?: Resource["section"]) {
+  return RESOURCES.find((r) => r.slug === slug && (!section || r.section === section)) ?? null;
 }
+export const catalogPath = (def: Resource, id?: string) => `/${def.section}/${def.slug}${id ? `/${id}` : ""}`;
 
 export type Parsed = { ok: true; value: Record<string, string | number | boolean | null> } | { ok: false; error: string };
 
