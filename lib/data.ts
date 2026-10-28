@@ -123,7 +123,20 @@ export async function aiOverview() {
     // Optional table (moderation was added later); absent → no rows.
     fetchAll<ModerationRow>(db, "humor_moderation_checks", "model,allowed").catch(() => []),
   ]);
-  const stats = computeAiStats({ generations, captions, votes, moderation });
+  const computed = computeAiStats({ generations, captions, votes, moderation });
+  // The admin catalog (migration 202610280001) decides what is shown: deleted
+  // prompt chains drop out of "Prompt versions" (their runs and posts stay), and
+  // configured models appear in "Models" before they have any runs. Absent → all.
+  const [chainRows, modelRows] = await Promise.all([
+    db.from("humor_prompt_chains").select("prompt_version"),
+    db.from("humor_llm_models").select("model_id,display_name,is_active,humor_llm_providers(slug,name)").order("display_name"),
+  ]);
+  const kept = chainRows.error ? null : new Set((chainRows.data ?? []).map((c) => c.prompt_version as string));
+  const versions = kept ? computed.versions.filter((v) => kept.has(v.version)) : computed.versions;
+  const configured = modelRows.error ? [] : ((modelRows.data ?? []) as unknown as { model_id: string; display_name: string; is_active: boolean; humor_llm_providers: { slug: string; name: string } | null }[]);
+  const providerNames = Object.fromEntries(configured.flatMap((m) => (m.humor_llm_providers ? [[m.humor_llm_providers.slug, m.humor_llm_providers.name]] : [])));
+  const unused = configured.filter((m) => !computed.models.some((r) => r.model === m.model_id && r.provider === m.humor_llm_providers?.slug));
+  const stats = { ...computed, versions, hiddenVersions: computed.versions.length - versions.length, unused, providerNames };
   // The exact prompt text of the newest run for each prompt version.
   const prompts = await Promise.all(stats.versions.map(async (v) => {
     const { data } = await db.from("humor_generations").select("id,system_prompt,user_prompt,generation_config,model,created_at")
