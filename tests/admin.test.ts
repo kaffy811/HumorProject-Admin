@@ -177,7 +177,8 @@ const domains = resource("signup-domains")!, emails = resource("whitelisted-emai
 assert.equal(resource("profiles"), null, "only listed tables are editable");
 assert.equal(resource("terms", "team"), null, "terms are an AI tab");
 assert.equal(resource("signup-domains", "ai"), null, "sign-up lists are a Team tab");
-assert.equal(catalogPath(terms), "/ai/terms"); assert.equal(catalogPath(domains, "x"), "/team/signup-domains/x");
+assert.equal(catalogPath(terms), "/ai/terms");
+assert.equal(catalogPath(providers), "/ai/llm-models", "providers are listed with models"); assert.equal(catalogPath(providers, "p"), "/ai/llm-providers/p"); assert.equal(catalogPath(domains, "x"), "/team/signup-domains/x");
 assert.deepEqual(RESOURCES.filter((r) => r.section === "team").map((r) => r.slug), ["signup-domains", "whitelisted-emails"]);
 assert.equal(new Set(RESOURCES.map((r) => r.slug)).size, RESOURCES.length);
 assert.deepEqual(parseRecord(terms, form({ term: " Butler ", definition: "Library", example: " ", category: "campus" })), { ok: true, value: { term: "Butler", definition: "Library", example: null, category: "campus" } });

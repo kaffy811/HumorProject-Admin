@@ -20,6 +20,10 @@ export type Resource = {
   unique: string; stampCreator?: boolean;
   // Rows elsewhere that block a delete (foreign key RESTRICT).
   inUse?: string;
+  // Another table listed as a section under this one (providers under models).
+  companion?: string;
+  // Listed on another resource's page instead of its own tab.
+  listedOn?: string;
 };
 
 export const CAPTION_STYLES = ["Deadpan", "Roast", "Pun", "Dad joke", "Absurd", "Wholesome"] as const;
@@ -66,7 +70,7 @@ export const RESOURCES: Resource[] = [
   },
   {
     section: "ai", slug: "llm-models", table: "humor_llm_models", title: "LLM models", singular: "model",
-    description: "Models the caption pipeline can call. A prompt-chain step points at one of these.",
+    description: "Models the caption pipeline can call (a prompt-chain step points at one of these), and below them the providers that host them.",
     fields: [
       { name: "display_name", label: "Name", kind: "text", required: true, max: 80, list: true },
       { name: "provider_id", label: "Provider", kind: "ref", required: true, ref: { table: "humor_llm_providers", label: "name" }, list: true },
@@ -78,6 +82,7 @@ export const RESOURCES: Resource[] = [
       { name: "notes", label: "Notes", kind: "textarea", max: 500 },
     ],
     order: { column: "display_name", ascending: true }, search: ["display_name", "model_id"], unique: "This provider already has a model with that API id.",
+    companion: "llm-providers",
   },
   {
     section: "ai", slug: "llm-providers", table: "humor_llm_providers", title: "LLM providers", singular: "provider",
@@ -89,6 +94,7 @@ export const RESOURCES: Resource[] = [
       { name: "notes", label: "Notes", kind: "textarea", max: 500 },
     ],
     order: { column: "name", ascending: true }, search: ["name", "slug"], unique: "A provider with that slug already exists.",
+    listedOn: "llm-models",
     inUse: "This provider still has models. Delete or move its models first.",
   },
   {
@@ -129,7 +135,8 @@ export const STEP_RESOURCE: Resource = {
 export function resource(slug: string, section?: Resource["section"]) {
   return RESOURCES.find((r) => r.slug === slug && (!section || r.section === section)) ?? null;
 }
-export const catalogPath = (def: Resource, id?: string) => `/${def.section}/${def.slug}${id ? `/${id}` : ""}`;
+// A row's edit page, or the page that lists the table.
+export const catalogPath = (def: Resource, id?: string) => (id ? `/${def.section}/${def.slug}/${id}` : `/${def.section}/${def.listedOn ?? def.slug}`);
 
 export type Parsed = { ok: true; value: Record<string, string | number | boolean | object | null> } | { ok: false; error: string };
 

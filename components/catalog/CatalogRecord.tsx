@@ -30,7 +30,7 @@ export async function CatalogRecord({ section, params, searchParams }: { section
   const title = String(row[def.fields[0].name] ?? def.singular);
   return (
     <div className="stack">
-      <Link href={catalogPath(def)} className="muted">← All {def.title.toLowerCase()}</Link>
+      <Link href={catalogPath(def)} className="muted">← All {(def.listedOn ? resource(def.listedOn, section)! : def).title.toLowerCase()}</Link>
       <header className="page-head" style={{ marginBottom: 0 }}>
         <div>
           <span className="eyebrow">{def.singular} · <span className="mono">{def.table}</span></span>
