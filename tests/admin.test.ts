@@ -284,3 +284,17 @@ import { chainIssue } from "../lib/chain-check";
   assert.match(chainIssue([s(m(), "Image: [image]\nDirection: none")])!, /no \{direction\}/);
   console.log("PASS member chain checks.");
 }
+
+// New post: same caption acceptance as the member Create flow.
+import { acceptCaptions, finalText } from "../lib/create-rules";
+const four = [["A", "deadpan"], ["B", "Roast"], ["C", "pun"], ["D", "dad joke"]].map(([caption, style]) => ({ caption, style }));
+assert.deepEqual(acceptCaptions(four), { ok: true, captions: [{ caption: "A", style: "Deadpan" }, { caption: "B", style: "Roast" }, { caption: "C", style: "Pun" }, { caption: "D", style: "Dad joke" }] });
+assert.equal(acceptCaptions(four.slice(0, 3)).ok, false);
+assert.equal(acceptCaptions([...four.slice(0, 3), { caption: "D", style: "pun" }]).ok, false, "styles must differ");
+assert.equal(acceptCaptions([...four.slice(0, 3), { caption: "a", style: "absurd" }]).ok, false, "captions must differ");
+assert.equal(acceptCaptions([...four.slice(0, 3), { caption: "D", style: "sarcasm" }]).ok, false, "unknown style");
+assert.equal(acceptCaptions([...four.slice(0, 3), { caption: "x".repeat(201), style: "absurd" }]).ok, false);
+assert.deepEqual(finalText("  hi  "), { ok: true, value: "hi" });
+assert.equal(finalText("   ").ok, false);
+assert.equal(finalText("😀".repeat(200)).ok, true, "limit counts characters, not bytes");
+console.log("PASS new-post caption rules.");

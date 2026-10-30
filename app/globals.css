@@ -204,3 +204,32 @@ details.card summary { list-style: none; }
 /* Section tabs (AI models & prompts, Team & access) wrap instead of hiding tabs off-screen. */
 .tabs-wrap { flex-wrap: wrap; gap: 0 20px; overflow: visible; }
 
+
+/* New post: the member Create flow's five step panels */
+.create-flow { display: grid; gap: 18px; max-width: 920px; }
+.create-step { border: 1.5px solid var(--ink); background: var(--paper); }
+.create-step.is-active { border-width: 2px; background: var(--card); box-shadow: var(--shadow); }
+.create-step.is-disabled { opacity: 0.6; }
+.create-step-head { width: 100%; display: flex; align-items: center; gap: 14px; padding: 18px 22px; background: none; border: 0; text-align: left; cursor: pointer; }
+.create-step-head:disabled { cursor: default; }
+.create-step-number { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border: 1.5px solid var(--ink); font: 700 13px var(--font-label); }
+.is-active .create-step-number { background: var(--tomato); border-width: 2px; }
+.create-step-title { font-weight: 800; font-size: 17px; }
+.create-step-summary { margin-left: auto; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 45%; }
+.create-step-body { padding: 0 22px 22px; display: grid; gap: 12px; justify-items: start; }
+.create-step-body > * { max-width: 100%; }
+.create-input { width: 100%; min-height: 50px; font-size: 16px; }
+.create-cta { min-height: 50px; padding: 12px 26px; font-size: 16px; }
+.dropzone { width: 100%; min-height: 220px; display: grid; place-items: center; align-content: center; gap: 10px; padding: 24px; border: 2px dashed var(--ink); background: transparent; text-align: center; cursor: pointer; font-size: 13px; }
+.dropzone b { font-size: 19px; }
+.dropzone.is-dragging, .dropzone:hover:not(:disabled) { background: #fff8d6; }
+.dropzone-preview { max-height: 260px; max-width: 100%; object-fit: contain; border: 2px solid var(--ink); }
+.generation-status { font-weight: 800; font-size: 18px; margin: 4px 0; }
+.candidates { display: grid; gap: 10px; width: 100%; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.candidate { display: grid; gap: 8px; justify-items: start; text-align: left; padding: 14px; border: 2px solid var(--ink); background: #fffdf5; cursor: pointer; font-size: 15px; font-weight: 700; line-height: 1.35; }
+.candidate.is-selected { background: var(--warn-bg); box-shadow: var(--shadow-sm); }
+.release { width: 100%; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 720px) { .release { grid-template-columns: minmax(0, 1fr); } }
+.release-card { margin: 0; border: 2px solid var(--ink); box-shadow: var(--shadow); background: var(--paper); }
+.release-caption { margin: 0; padding: 16px; font-weight: 800; font-size: 19px; line-height: 1.35; border-bottom: 2px solid var(--ink); }
+.release-card img { display: block; width: 100%; }
