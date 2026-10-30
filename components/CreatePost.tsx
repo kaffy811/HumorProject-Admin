@@ -18,9 +18,8 @@ async function shrink(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("resize failed"))), "image/jpeg", 0.9));
 }
 
-export function CreatePost({ hasOfficial }: { hasOfficial: boolean }) {
+export function CreatePost({ me }: { me: { username: string; avatarUrl: string | null } }) {
   const [step, setStep] = useState<Step>(1);
-  const [owner, setOwner] = useState<"me" | "official">("me");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [filename, setFilename] = useState("");
   const [mode, setMode] = useState<"ai" | "handmade">("ai");
@@ -29,7 +28,6 @@ export function CreatePost({ hasOfficial }: { hasOfficial: boolean }) {
   const [generated, setGenerated] = useState<Generated | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [edits, setEdits] = useState<Record<string, string>>({});
-  const [description, setDescription] = useState("");
   const [error, setError] = useState<{ step: Step; text: string } | null>(null);
   const [busy, setBusy] = useState<"upload" | "generate" | "publish" | null>(null);
   const [, startTransition] = useTransition();
@@ -49,7 +47,6 @@ export function CreatePost({ hasOfficial }: { hasOfficial: boolean }) {
       if (draft) await discardDraft(draft.imageId);
       const form = new FormData();
       form.set("image", await shrink(file), file.name);
-      form.set("author", owner);
       const result = await startDraft(form);
       if (!result.ok) return setError({ step: 1, text: result.error });
       setDraft(result.draft); setFilename(file.name); setGenerated(null); setSelected(null); setEdits({});
@@ -78,8 +75,8 @@ export function CreatePost({ hasOfficial }: { hasOfficial: boolean }) {
     const result = await generateCaptions(draft.imageId, direction);
     setBusy(null);
     if (!result.ok) return setError({ step: 3, text: result.error });
-    setGenerated(result); setSelected(result.candidates[0].id); setEdits({});
-    setDescription((d) => d || result.scene);
+    // Like the member page: nothing is picked until the admin chooses.
+    setGenerated(result); setSelected(null); setEdits({});
     setStep(4);
   }
 
@@ -87,7 +84,7 @@ export function CreatePost({ hasOfficial }: { hasOfficial: boolean }) {
     if (!draft) return;
     setError(null); setBusy("publish");
     startTransition(async () => {
-      const result = await publishDraft({ imageId: draft.imageId, mode, generationId: generated?.generationId, candidateId: pick?.id, text: caption, description });
+      const result = await publishDraft({ imageId: draft.imageId, mode, generationId: generated?.generationId, candidateId: pick?.id, text: caption, description: "" });
       // Success redirects to the new post; only failures come back.
       if (result && !result.ok) { setError({ step: 5, text: result.error }); setBusy(null); }
     });
@@ -95,7 +92,7 @@ export function CreatePost({ hasOfficial }: { hasOfficial: boolean }) {
 
   async function startOver() {
     if (draft) await discardDraft(draft.imageId);
-    setDraft(null); setFilename(""); setGenerated(null); setSelected(null); setEdits({}); setHandmade(""); setDirection(""); setDescription(""); setError(null); setStep(1);
+    setDraft(null); setFilename(""); setGenerated(null); setSelected(null); setEdits({}); setHandmade(""); setDirection(""); setError(null); setStep(1);
   }
 
   const open = (target: Step) => () => { if (!locked) setStep(target); };
@@ -104,14 +101,6 @@ export function CreatePost({ hasOfficial }: { hasOfficial: boolean }) {
   return (
     <div className="create-flow">
       <Panel number={1} title="The evidence" summary={filename || "Choose a photo"} active={step === 1} enabled={!locked} onOpen={open(1)}>
-        <div className="field" style={{ maxWidth: 320, marginBottom: 14 }}>
-          <label htmlFor="owner">Post as</label>
-          <select id="owner" className="select" value={owner} disabled={!!draft || locked} onChange={(e) => setOwner(e.target.value as "me" | "official")}>
-            <option value="me">My account</option>
-            {hasOfficial && <option value="official">Official account (Little Mao)</option>}
-          </select>
-          {draft && <span className="hint">Start over to change the author.</span>}
-        </div>
         <button type="button" className={`dropzone${dragging ? " is-dragging" : ""}`} disabled={locked}
           onClick={() => input.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)}
@@ -154,7 +143,17 @@ export function CreatePost({ hasOfficial }: { hasOfficial: boolean }) {
 
       {mode === "ai" && (
         <Panel number={3} title="Let the baby think" summary={generated ? "Four candidates. One ego." : ""} active={step === 3} enabled={false} onOpen={open(3)}>
-          {busy === "generate" && <p className="generation-status" role="status">Thinking. An unfamiliar experience.</p>}
+          {busy === "generate" && (
+            <div className="thinking" role="status" aria-live="polite">
+              {/* eslint-disable-next-line @next/next/no-img-element -- static mascot */}
+              <img src="/baby/thinking.webp" alt="" className="thinking-baby" />
+              <div>
+                <p className="generation-status">Thinking<span className="thinking-dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></p>
+                <p className="muted" style={{ margin: 0 }}>An unfamiliar experience. Four punchlines are on the way.</p>
+                <span className="thinking-bar" aria-hidden="true"><i /></span>
+              </div>
+            </div>
+          )}
           {error?.step === 3 && (
             <>
               <p className="notice notice-bad" role="alert">{error.text}</p>
@@ -165,32 +164,38 @@ export function CreatePost({ hasOfficial }: { hasOfficial: boolean }) {
       )}
 
       {mode === "ai" && (
-        <Panel number={4} title="Choose the punchline" summary="Pick one. Make it yours." active={step === 4} enabled={!!generated && !locked} onOpen={open(4)}>
+        <Panel number={4} title="Choose the punchline" summary={pick ? caption : "Pick one. Make it yours."} active={step === 4} enabled={!!generated && !locked} onOpen={open(4)}>
           {generated && (
             <>
-              <p className="muted" style={{ margin: "0 0 12px", fontSize: 12.5 }}>
-                Written by <b className="mono">{generated.model}</b> ({generated.provider}) with prompt <span className="mono">{generated.promptVersion}</span>. {generated.note}
-              </p>
-              <div className="candidates" role="radiogroup" aria-label="Caption candidates">
-                {generated.candidates.map((c) => (
-                  <button key={c.id} type="button" role="radio" aria-checked={selected === c.id} className={`candidate${selected === c.id ? " is-selected" : ""}`} onClick={() => setSelected(c.id)}>
-                    <span className="badge">{c.style}</span>
-                    <span>{edits[c.id] ?? c.text}</span>
-                    {edits[c.id] !== undefined && edits[c.id] !== c.text && <span className="muted" style={{ fontSize: 12 }}>Your edit, kept safe</span>}
-                  </button>
-                ))}
-              </div>
-              {pick && (
-                <div className="field" style={{ marginTop: 16 }}>
-                  <label htmlFor="edit">The final cut</label>
-                  <textarea id="edit" aria-label="Edit selected caption" className="textarea" value={edits[pick.id] ?? pick.text} onChange={(e) => setEdits({ ...edits, [pick.id]: e.target.value })} />
-                  <span className={`hint num${tooLong ? " notice-bad" : ""}`}>{chars(caption.trim())}/{MAX_CAPTION}</span>
+              <div className="punchline">
+                <div className="candidates" role="radiogroup" aria-label="Caption candidates">
+                  {generated.candidates.map((c, i) => (
+                    <button key={c.id} type="button" role="radio" aria-checked={selected === c.id} className={`candidate${selected === c.id ? " is-selected" : ""}`} onClick={() => setSelected(c.id)}>
+                      <span className="candidate-label"><span className="radio-dot" aria-hidden="true" />Option {i + 1} · {c.style}</span>
+                      <span>{edits[c.id] ?? c.text}</span>
+                      {edits[c.id] !== undefined && edits[c.id] !== c.text && <span className="muted" style={{ fontSize: 12 }}>Your edit, kept safe</span>}
+                    </button>
+                  ))}
                 </div>
-              )}
-              <div className="toolbar" style={{ marginTop: 12 }}>
-                <button type="button" className="btn btn-primary" disabled={!pick || tooLong || !caption.trim()} onClick={() => setStep(5)}>Next: release it</button>
-                <button type="button" className="btn" onClick={generate}>Regenerate</button>
+                <div className="final-cut">
+                  <span className="eyebrow">The final cut</span>
+                  <PostPreview me={me} caption={caption} image={draft?.previewUrl} />
+                  {pick && (
+                    <div className="field" style={{ width: "100%" }}>
+                      <label htmlFor="edit" className="eyebrow">Make it yours</label>
+                      <textarea id="edit" aria-label="Edit selected caption" className="textarea" value={edits[pick.id] ?? pick.text} onChange={(e) => setEdits({ ...edits, [pick.id]: e.target.value })} />
+                      <span className={`hint num${tooLong ? " notice-bad" : ""}`}>{chars(caption.trim())}/{MAX_CAPTION}</span>
+                    </div>
+                  )}
+                </div>
               </div>
+              <div className="toolbar" style={{ marginTop: 6 }}>
+                <button type="button" className="btn create-cta" onClick={generate}>Regenerate</button>
+                <button type="button" className="btn btn-primary create-cta" disabled={!pick || tooLong || !caption.trim()} onClick={() => setStep(5)}>Looks funny enough</button>
+              </div>
+              <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+                Written by <span className="mono">{generated.model}</span> ({generated.provider}) · prompt <span className="mono">{generated.promptVersion}</span>. {generated.note}
+              </p>
             </>
           )}
         </Panel>
@@ -198,33 +203,35 @@ export function CreatePost({ hasOfficial }: { hasOfficial: boolean }) {
 
       <Panel number={mode === "ai" ? 5 : 3} title="Release it into the world" summary="Your call." active={step === 5} enabled={!!draft && !!caption.trim() && !locked} onOpen={open(5)}>
         {draft && (
-          <div className="release">
-            <figure className="release-card" aria-label="Final post preview">
-              <p className="release-caption">{caption.trim() || "…"}</p>
-              {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
-              <img src={draft.previewUrl} alt="" />
-            </figure>
-            <div className="stack" style={{ gap: 14 }}>
-              <dl className="kv">
-                <dt>Author</dt><dd>{owner === "official" ? "Official account (Little Mao)" : "My account"}</dd>
-                <dt>Style</dt><dd>{mode === "ai" ? pick?.style ?? "—" : "Handmade"}</dd>
-                <dt>Source</dt><dd>{mode === "ai" ? "AI caption" : "Member-written"}</dd>
-              </dl>
-              <div className="field">
-                <label htmlFor="scene">Scene description <span className="muted">(optional)</span></label>
-                <textarea id="scene" className="textarea" maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What's in the photo (the model fills this in when it can)." />
-              </div>
-              {error?.step === 5 && <p className="notice notice-bad" role="alert">{error.text}</p>}
-              <div className="toolbar">
-                <button type="button" className="btn btn-primary create-cta" disabled={locked || !caption.trim() || tooLong} onClick={publish}>{busy === "publish" ? "Posting…" : error?.step === 5 ? "Try posting again" : "Post it"}</button>
-                <button type="button" className="btn btn-danger" disabled={locked} onClick={startOver}>Start over</button>
-              </div>
-              <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>One photo. One punchline. An unreasonable amount of confidence.</p>
+          <>
+            {mode === "handmade" && <PostPreview me={me} caption={caption} image={draft.previewUrl} />}
+            <p style={{ margin: 0, fontSize: 16 }}>One photo. One punchline. An unreasonable amount of confidence.</p>
+            {error?.step === 5 && <p className="notice notice-bad" role="alert">{error.text}</p>}
+            <div className="toolbar" style={{ alignItems: "center", gap: 18 }}>
+              <button type="button" className="btn btn-primary create-cta" disabled={locked || !caption.trim() || tooLong} onClick={publish}>{busy === "publish" ? "Posting…" : error?.step === 5 ? "Try posting again" : "Post it"}</button>
+              <button type="button" className="link-button" disabled={locked} onClick={() => setStep(mode === "ai" ? 4 : 2)}>{mode === "ai" ? "Back to the punchline" : "Back to your caption"}</button>
+              <button type="button" className="link-button" disabled={locked} onClick={startOver}>Start over</button>
             </div>
-          </div>
+          </>
         )}
       </Panel>
     </div>
+  );
+}
+
+// The post card members see, as on the member Create page.
+function PostPreview({ me, caption, image }: { me: { username: string; avatarUrl: string | null }; caption: string; image?: string }) {
+  return (
+    <figure className="post-preview" aria-label="Final post preview">
+      <figcaption className="post-preview-head">
+        {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
+        {me.avatarUrl ? <img src={me.avatarUrl} alt="" className="avatar" /> : <span className="avatar">{me.username.slice(0, 1).toUpperCase()}</span>}
+        <span className="mono" style={{ fontWeight: 700 }}>@{me.username}</span>
+      </figcaption>
+      <p className={`post-preview-caption${caption.trim() ? "" : " is-placeholder"}`}>{caption.trim() || "A punchline goes here. No pressure."}</p>
+      {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
+      {image ? <img src={image} alt="" className="post-preview-image" /> : null}
+    </figure>
   );
 }
 

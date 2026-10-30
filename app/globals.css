@@ -225,9 +225,34 @@ details.card summary { list-style: none; }
 .dropzone.is-dragging, .dropzone:hover:not(:disabled) { background: #fff8d6; }
 .dropzone-preview { max-height: 260px; max-width: 100%; object-fit: contain; border: 2px solid var(--ink); }
 .generation-status { font-weight: 800; font-size: 18px; margin: 4px 0; }
-.candidates { display: grid; gap: 10px; width: 100%; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
-.candidate { display: grid; gap: 8px; justify-items: start; text-align: left; padding: 14px; border: 2px solid var(--ink); background: #fffdf5; cursor: pointer; font-size: 15px; font-weight: 700; line-height: 1.35; }
-.candidate.is-selected { background: var(--warn-bg); box-shadow: var(--shadow-sm); }
+.punchline { width: 100%; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 760px) { .punchline { grid-template-columns: minmax(0, 1fr); } }
+.candidates { display: grid; gap: 14px; width: 100%; }
+.candidate { display: grid; gap: 10px; justify-items: start; text-align: left; padding: 16px 18px; border: 2px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-sm); cursor: pointer; font-size: 16px; line-height: 1.5; }
+.candidate:hover { background: #fff8d6; }
+.candidate.is-selected { background: var(--card); box-shadow: var(--shadow); outline: 2px solid var(--tomato); outline-offset: -6px; }
+.candidate-label { display: flex; align-items: center; gap: 10px; font: 700 11.5px var(--font-label); letter-spacing: 1.5px; text-transform: uppercase; }
+.radio-dot { width: 18px; height: 18px; border: 1.5px solid var(--ink); border-radius: 50%; background: #fff; display: inline-grid; place-items: center; }
+.is-selected .radio-dot::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--tomato); }
+.final-cut { display: grid; gap: 10px; }
+.post-preview { margin: 0; border: 2px solid var(--ink); box-shadow: var(--shadow); background: var(--paper); max-width: 420px; width: 100%; }
+.post-preview-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px 0; font-size: 12px; }
+.post-preview-caption { margin: 0; padding: 12px 22px 20px; font-weight: 800; font-size: 22px; line-height: 1.3; letter-spacing: -0.4px; border-bottom: 2px solid var(--ink); }
+.post-preview-caption.is-placeholder { color: var(--ink-2); }
+.post-preview-image { display: block; width: 100%; }
+.link-button { background: none; border: 0; padding: 0; font: inherit; font-size: 14px; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; color: var(--ink); }
+.link-button:disabled { opacity: 0.5; cursor: default; }
+.thinking { display: flex; align-items: center; gap: 18px; padding: 6px 0; }
+.thinking-baby { width: 92px; height: 92px; object-fit: contain; animation: baby-bob 1.1s ease-in-out infinite; transform-origin: 50% 90%; }
+.thinking-dots i { font-style: normal; display: inline-block; animation: dot 1.2s infinite; }
+.thinking-dots i:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots i:nth-child(3) { animation-delay: 0.4s; }
+.thinking-bar { display: block; position: relative; overflow: hidden; width: min(320px, 60vw); height: 10px; margin-top: 12px; border: 2px solid var(--ink); background: #fff; }
+.thinking-bar i { position: absolute; inset: 0 auto 0 0; width: 35%; background: var(--tomato); animation: sweep 1.3s ease-in-out infinite; }
+@keyframes baby-bob { 0%, 100% { transform: rotate(-6deg) translateY(0); } 50% { transform: rotate(6deg) translateY(-6px); } }
+@keyframes dot { 0%, 60%, 100% { opacity: 0.15; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-4px); } }
+@keyframes sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) { .thinking-baby, .thinking-dots i, .thinking-bar i { animation: none; } .thinking-bar i { width: 100%; opacity: 0.4; } }
 .release { width: 100%; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 22px; align-items: start; }
 @media (max-width: 720px) { .release { grid-template-columns: minmax(0, 1fr); } }
 .release-card { margin: 0; border: 2px solid var(--ink); box-shadow: var(--shadow); background: var(--paper); }

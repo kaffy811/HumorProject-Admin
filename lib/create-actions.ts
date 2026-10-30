@@ -32,12 +32,8 @@ export async function startDraft(form: FormData): Promise<StartResult> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (!sniffImage(bytes)) return { ok: false, error: "Choose a JPG, PNG, WebP or GIF." };
   const db = serviceClient(admin.id);
-  let owner = admin.id;
-  if (form.get("author") === "official") {
-    const { data } = await db.from("profiles").select("id").eq("is_official", true).maybeSingle();
-    if (!data) return { ok: false, error: "No official account exists in this database." };
-    owner = data.id;
-  }
+  // Admin posts are always published from the admin's own account.
+  const owner = admin.id;
   let prepared: { data: Buffer; info: { width: number; height: number } };
   let locked: Buffer;
   try {
