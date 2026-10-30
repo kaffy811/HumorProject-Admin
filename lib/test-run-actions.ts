@@ -5,7 +5,7 @@ import { MAX_UPLOAD_BYTES, sniffImage } from "./media-rules";
 import { fillUserPrompt, runCaptions, type RunResult } from "./llm";
 import { serviceClient } from "./supabase/service";
 
-export type TestRunState = (RunResult & { model: string; provider: string; chain: string; prompt: string }) | { ok: false; error: string } | null;
+export type TestRunState = (RunResult & { model: string; provider: string; chain: string; chainId: string; prompt: string }) | { ok: false; error: string } | null;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Runs step 1 of a prompt chain on one photo with any configured model.
@@ -45,5 +45,5 @@ export async function testRun(_: TestRunState, form: FormData): Promise<TestRunS
     maxOutputTokens: model.max_output_tokens, temperature: model.temperature === null ? null : Number(model.temperature),
     schema: (step.output_schema as object | null) ?? null,
   }, process.env);
-  return { ...result, model: model.model_id, provider, chain: `${chain.name} (${chain.prompt_version})`, prompt };
+  return { ...result, model: model.model_id, provider, chain: `${chain.name} (${chain.prompt_version})`, chainId, prompt };
 }

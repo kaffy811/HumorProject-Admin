@@ -1,12 +1,10 @@
 "use server";
-import { randomUUID } from "node:crypto";
-import sharp from "sharp";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "./admin";
 import { serviceClient } from "./supabase/service";
 import { storageBucket } from "./supabase/schema";
-import { MAX_UPLOAD_BYTES, parseMediaFields, sniffImage } from "./media-rules";
+import { parseMediaFields } from "./media-rules";
 
 export type ActionState = { error?: string; ok?: string } | null;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -15,67 +13,6 @@ function refresh(id?: string) {
   revalidatePath("/");
   revalidatePath("/posts");
   if (id) revalidatePath(`/posts/${id}`);
-}
-
-export async function createMedia(_: ActionState, form: FormData): Promise<ActionState> {
-  const admin = await requireAdmin();
-  const fields = parseMediaFields(form);
-  if (!fields.ok) return { error: fields.error };
-  if (fields.value.source === "seed") return { error: "Official seed posts come only from the seed import script." };
-  const file = form.get("image");
-  if (!(file instanceof File) || !file.size) return { error: "Choose an image." };
-  if (file.size > MAX_UPLOAD_BYTES) return { error: "Images must be 4 MB or smaller." };
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  if (!sniffImage(bytes)) return { error: "Choose a JPG, PNG, WebP or GIF." };
-
-  const db = serviceClient(admin.id);
-  let owner = admin.id;
-  if (form.get("author") === "official") {
-    const { data } = await db.from("profiles").select("id").eq("is_official", true).maybeSingle();
-    if (!data) return { error: "No official account exists in this database." };
-    owner = data.id;
-  }
-
-  let prepared: { data: Buffer; info: { width: number; height: number } };
-  let locked: Buffer;
-  try {
-    prepared = await sharp(bytes, { animated: false, limitInputPixels: 40_000_000 }).rotate()
-      .resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 88 }).toBuffer({ resolveWithObject: true });
-    // Same blurred preview the member app shows to signed-out visitors.
-    locked = await sharp(prepared.data).resize({ width: 48, height: 48, fit: "inside" }).blur(6).webp({ quality: 25 }).toBuffer();
-  } catch {
-    return { error: "That image could not be read." };
-  }
-
-  const imageId = randomUUID();
-  const imagePath = `${owner}/${imageId}.webp`;
-  const lockedPath = `${imageId}/locked.webp`;
-  const images = db.storage.from(storageBucket("humor-images"));
-  const previews = db.storage.from(storageBucket("humor-previews"));
-  const cleanup = async () => {
-    await db.from("humor_images").delete().eq("id", imageId);
-    await images.remove([imagePath]);
-    await previews.remove([lockedPath]);
-  };
-
-  const { error: reserve } = await db.from("humor_images").insert({ id: imageId, user_id: owner, status: "processing", description: fields.value.description });
-  if (reserve) return { error: `Could not create the image record: ${reserve.message}` };
-  const steps = [
-    () => images.upload(imagePath, prepared.data, { contentType: "image/webp", upsert: false }),
-    () => previews.upload(lockedPath, locked, { contentType: "image/webp", upsert: true }),
-    () => db.from("humor_images").update({ storage_path: imagePath, status: "ready", image_width: prepared.info.width, image_height: prepared.info.height, locked_thumbnail_path: lockedPath }).eq("id", imageId),
-  ];
-  for (const step of steps) {
-    const { error } = await step();
-    if (error) { await cleanup(); return { error: `Upload failed: ${error.message}` }; }
-  }
-  const { data: caption, error } = await db.from("humor_captions")
-    .insert({ image_id: imageId, content: fields.value.content, style: fields.value.style, source: fields.value.source })
-    .select("id").single();
-  if (error || !caption) { await cleanup(); return { error: `Could not publish the caption: ${error?.message}` }; }
-  refresh();
-  redirect(`/posts/${caption.id}?created=1`);
 }
 
 export async function updateMedia(_: ActionState, form: FormData): Promise<ActionState> {

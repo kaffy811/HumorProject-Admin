@@ -2,6 +2,7 @@
 import { startTransition, useActionState, useState } from "react";
 import { testRun, type TestRunState } from "@/lib/test-run-actions";
 import { duration, n } from "@/lib/format";
+import { SaveExamples } from "./SaveExamples";
 
 type Option = { id: string; label: string };
 export function TestRunForm({ models, chains, supported }: { models: (Option & { provider: string })[]; chains: Option[]; supported: string[] }) {
@@ -49,11 +50,9 @@ export function TestRunForm({ models, chains, supported }: { models: (Option & {
           <div className="stack">
             <p className="sub" style={{ margin: 0 }}><span className="mono">{state.provider} · {state.model}</span> · {state.chain} · {duration(state.latencyMs)} · {n(state.usage.input)} in / {n(state.usage.output)} out tokens</p>
             {!!state.captions.length && (
-              <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 8 }}>
-                {state.captions.map((c, i) => <li key={i}><b>{c.caption}</b>{c.style && <span className="badge" style={{ marginLeft: 6 }}>{c.style}</span>}</li>)}
-              </ol>
+              <SaveExamples key={state.rawText} captions={state.captions} scene={state.description ?? ""} chainId={state.chainId}
+                source={`Test run · ${state.provider} ${state.model} · ${state.chain}`} />
             )}
-            {state.description && <p style={{ margin: 0 }}><span className="eyebrow">Scene</span><br />{state.description}</p>}
             {state.warnings.map((w) => <div key={w} className="notice notice-warn">{w}</div>)}
             {state.rawText && <details><summary style={{ cursor: "pointer" }}>Raw response</summary><pre className="prompt">{state.rawText}</pre></details>}
             <details><summary style={{ cursor: "pointer" }}>User prompt sent</summary><pre className="prompt">{state.prompt}</pre></details>

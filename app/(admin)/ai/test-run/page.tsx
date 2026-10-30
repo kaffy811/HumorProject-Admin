@@ -28,7 +28,7 @@ export default async function TestRun() {
         <div>
           <span className="eyebrow">Try a real model</span>
           <h1>Test run.</h1>
-          <p>Run the first step of a prompt chain on one photo with any model from <Link href="/ai/llm-models">LLM models &amp; providers</Link>, and see exactly what comes back. Nothing is saved and members are not affected; each run is billed by the provider.</p>
+          <p>Run the first step of a prompt chain on one photo with any model from <Link href="/ai/llm-models">LLM models &amp; providers</Link>, and see exactly what comes back. Nothing is saved unless you keep a caption as a <Link href="/ai/examples">generation example</Link>, and members are not affected; each run is billed by the provider.</p>
         </div>
       </header>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
