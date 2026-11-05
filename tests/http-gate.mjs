@@ -14,6 +14,11 @@ const profiles = [
   { id: HELPER, username: "helper", first_name: "Team", last_name: "Admin", display_name: null, avatar_path: null, created_at: "2026-10-03T00:00:00Z", onboarded_at: "2026-10-03T00:00:00Z", is_official: false, is_superadmin: false, is_admin: true },
   { id: MEMBER, username: "member", first_name: "Plain", last_name: "Member", display_name: null, avatar_path: null, created_at: "2026-10-02T00:00:00Z", onboarded_at: null, is_official: false, is_superadmin: false },
 ];
+const CHAIN = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const FIXTURES = {
+  humor_prompt_chains: [{ id: CHAIN, prompt_version: "campus-captions-v4", name: "Campus captions (3 steps)", description: "Members' chain.", created_at: "2026-11-01T00:00:00Z", updated_at: "2026-11-01T00:00:00Z", humor_prompt_chain_mix: { share: 100 } }],
+  humor_prompt_chain_steps: [{ id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", chain_id: CHAIN, position: 1, name: "Look at the photo", llm_model_id: null, include_image: true, output_kind: "text", system_prompt: "Describe precisely.", user_prompt: "Describe. Direction: {direction}", output_schema: null, updated_at: "2026-11-01T00:00:00Z", humor_llm_models: { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", display_name: "Gemini 3.8 Flash", humor_llm_providers: { name: "Google Gemini" } } }],
+};
 const b64 = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 const jwt = (sub, method = "oauth") => `${b64({ alg: "HS256", typ: "JWT" })}.${b64({ sub, role: "authenticated", exp: 4102444800, amr: [{ method, timestamp: 1 }], app_metadata: { providers: ["google"] } })}.sig`;
 const userFor = (token) => {
@@ -40,7 +45,7 @@ const supa = http.createServer((req, res) => {
   if (url.pathname === "/rest/v1/rpc/humor_leaderboard") return send(200, { posts: [], people: [], computedAt: "2026-10-20T00:00:00Z", startsAt: null });
   if (url.pathname.startsWith("/rest/v1/")) {
     const table = url.pathname.split("/").pop();
-    let rows = table === "profiles" ? profiles : [];
+    let rows = table === "profiles" ? profiles : FIXTURES[table] ?? [];
     for (const [key, value] of url.searchParams) {
       if (value.startsWith("eq.")) rows = rows.filter((row) => String(row[key]) === value.slice(3));
       if (value.startsWith("in.(")) rows = rows.filter((row) => value.slice(4, -1).split(",").includes(String(row[key])));
@@ -54,7 +59,7 @@ const supa = http.createServer((req, res) => {
 });
 await new Promise((resolve) => supa.listen(SUPA_PORT, resolve));
 const app = spawn("node", ["node_modules/next/dist/bin/next", "start", "--port", String(APP_PORT), "--hostname", "127.0.0.1"], {
-  env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: `http://localhost:${SUPA_PORT}`, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "pk", SUPABASE_SECRET_KEY: "sk", NEXT_TELEMETRY_DISABLED: "1" },
+  env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: `http://localhost:${SUPA_PORT}`, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "pk", SUPABASE_SECRET_KEY: "sk", NEXT_TELEMETRY_DISABLED: "1", PROMPT_CHAIN_TOOL_URL: "https://tool.example" },
   stdio: ["ignore", "pipe", "pipe"],
   detached: true,
 });
@@ -81,6 +86,11 @@ try {
   const users = await (await get("/users", { cookie: cookie(ADMIN) })).text();
   assert.match(users, /@member/); assert.match(users, /Superadmin/);
   // Admins use the console but not team management.
+  // Steps are read-only here and link to the Prompt Chain Tool.
+  const chainPage = await (await get(`/ai/prompt-chains/${CHAIN}`, { cookie: cookie(ADMIN) })).text();
+  assert.match(chainPage, new RegExp(`href="https://tool.example/chains/${CHAIN}"`), "links to the tool");
+  for (const text of ["Edit in Prompt Chain Tool", "Look at the photo", "Returns text", "Sees photo", "Describe precisely."]) assert.match(chainPage, new RegExp(text), text);
+  for (const gone of ["Delete step", "\\+ Add step", 'name="system_prompt"']) assert.doesNotMatch(chainPage, new RegExp(gone), `no step editing: ${gone}`);
   for (const path of ["/", "/posts", "/activity", "/rankings/posts"]) assert.equal((await get(path, { cookie: cookie(HELPER) })).status, 200, `admin ${path}`);
   for (const path of ["/ai/terms", "/ai/prompt-chains"]) assert.equal((await get(path, { cookie: cookie(HELPER) })).status, 200, `admin ${path}`);
   // Sign-up lists live under Team & access: superadmins only.

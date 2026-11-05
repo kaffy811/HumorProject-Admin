@@ -1,17 +1,16 @@
 "use client";
 import { useActionState, useEffect, useRef } from "react";
-import { createRecord, saveStep, updateRecord, type CatalogState } from "@/lib/catalog-actions";
-import { resource, STEP_RESOURCE, type Field } from "@/lib/catalog";
+import { createRecord, updateRecord, type CatalogState } from "@/lib/catalog-actions";
+import { resource, type Field } from "@/lib/catalog";
 
 export type RefOptions = Record<string, { value: string; label: string }[]>;
 type Values = Record<string, unknown>;
 
 // Create (no initial) or edit form for any catalog table. The definition is
 // looked up by slug here because RegExp patterns cannot cross to the client.
-// With chainId it edits a prompt-chain step instead.
-export function CatalogForm({ slug, initial, refs, chainId, defaults }: { slug: string; initial?: Values & { id: string }; refs: RefOptions; chainId?: string; defaults?: Values }) {
-  const def = chainId ? STEP_RESOURCE : resource(slug)!;
-  const [state, action, pending] = useActionState<CatalogState, FormData>(chainId ? saveStep : initial ? updateRecord : createRecord, null);
+export function CatalogForm({ slug, initial, refs, defaults }: { slug: string; initial?: Values & { id: string }; refs: RefOptions; defaults?: Values }) {
+  const def = resource(slug)!;
+  const [state, action, pending] = useActionState<CatalogState, FormData>(initial ? updateRecord : createRecord, null);
   const form = useRef<HTMLFormElement>(null);
   // A successful create clears the form for the next entry.
   useEffect(() => { if (state?.ok && !initial) form.current?.reset(); }, [state, initial]);
@@ -19,7 +18,6 @@ export function CatalogForm({ slug, initial, refs, chainId, defaults }: { slug: 
     <form ref={form} action={action} className="form">
       <input type="hidden" name="resource" value={def.slug} />
       {initial && <input type="hidden" name="id" value={initial.id} />}
-      {chainId && <input type="hidden" name="chain_id" value={chainId} />}
       {/* Remounted after each failed save so the fields show what was submitted. */}
       <div className="grid grid-2" style={{ gap: 12 }} key={state?.at ?? 0}>
         {def.fields.map((field) => (

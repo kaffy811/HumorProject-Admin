@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin, requireSuperadmin } from "./admin";
-import { catalogPath, dbErrorMessage, parseRecord, resource, STEP_RESOURCE, type Resource } from "./catalog";
+import { catalogPath, dbErrorMessage, parseRecord, resource, type Resource } from "./catalog";
 import { chainIssue, type ChainStep } from "./chain-check";
 import { serviceClient } from "./supabase/service";
 
@@ -65,34 +65,8 @@ export async function deleteRecord(form: FormData) {
   redirect(`${catalogPath(def)}?deleted=1`);
 }
 
-// Steps are created and edited on their chain's page.
-export async function saveStep(_: CatalogState, form: FormData): Promise<CatalogState> {
-  const admin = await requireAdmin();
-  const chainId = String(form.get("chain_id") ?? "");
-  const id = String(form.get("id") ?? "");
-  if (!UUID.test(chainId) || (id && !UUID.test(id))) return { error: "Unknown step." };
-  const parsed = parseRecord(STEP_RESOURCE, form);
-  if (!parsed.ok) return failed(STEP_RESOURCE, form, parsed.error);
-  const db = serviceClient(admin.id).from(STEP_RESOURCE.table);
-  const { data, error } = id
-    ? await db.update(parsed.value).eq("id", id).eq("chain_id", chainId).select("id").maybeSingle()
-    : await db.insert({ ...parsed.value, chain_id: chainId }).select("id").single();
-  if (error) return failed(STEP_RESOURCE, form, dbErrorMessage(STEP_RESOURCE, error));
-  if (!data) return { error: "This step no longer exists." };
-  revalidatePath(`/ai/prompt-chains/${chainId}`);
-  return { ok: id ? "Step saved." : "Step added." };
-}
-
-export async function deleteStep(form: FormData) {
-  const admin = await requireAdmin();
-  const chainId = String(form.get("chain_id") ?? "");
-  const id = String(form.get("id") ?? "");
-  if (!UUID.test(chainId) || !UUID.test(id)) redirect("/ai/prompt-chains");
-  const { error } = await serviceClient(admin.id).from(STEP_RESOURCE.table).delete().eq("id", id).eq("chain_id", chainId);
-  if (error) throw new Error(error.message);
-  revalidatePath(`/ai/prompt-chains/${chainId}`);
-  redirect(`/ai/prompt-chains/${chainId}?step=deleted`);
-}
+// Steps are edited only in the Prompt Chain Tool (one model per chain,
+// placeholders checked, every change versioned); this console shows them read-only.
 
 // One chain serves every member: it gets 100% of the mix, all others 0%.
 export async function chooseChainForMembers(_: CatalogState, form: FormData): Promise<CatalogState> {

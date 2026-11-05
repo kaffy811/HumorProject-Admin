@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin";
-import { resource, shareOf, STEP_RESOURCE } from "@/lib/catalog";
-import { deleteRecord, deleteStep } from "@/lib/catalog-actions";
-import { refOptions } from "@/lib/catalog-data";
+import { resource, shareOf } from "@/lib/catalog";
+import { deleteRecord } from "@/lib/catalog-actions";
 import { serviceClient } from "@/lib/supabase/service";
 import { n, when } from "@/lib/format";
 import { CatalogForm } from "@/components/CatalogForm";
@@ -16,10 +15,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const NOTICES: Record<string, [string, string]> = {
   "blocked=mix": ["bad", "Members are using this chain. Choose another model for members (Overview) first, then delete it."],
   "blocked=1": ["bad", "Another record still points at this chain."],
-  "step=deleted": ["good", "Step deleted."],
 };
 type Step = {
   id: string; position: number; name: string; llm_model_id: string | null; system_prompt: string; user_prompt: string; output_schema: unknown; updated_at: string;
+  include_image?: boolean; output_kind?: string;
   humor_llm_models: { id: string; display_name: string; humor_llm_providers: { name: string } | null } | null;
 };
 
@@ -31,15 +30,17 @@ export default async function PromptChain({ params, searchParams }: { params: Pr
   const db = serviceClient();
   const { data: chain } = await db.from("humor_prompt_chains").select("*,humor_prompt_chain_mix(share)").eq("id", id).maybeSingle();
   if (!chain) notFound();
-  const [{ data: steps }, { data: runs, count }, { count: examples }, refs] = await Promise.all([
+  const [{ data: steps }, { data: runs, count }, { count: examples }] = await Promise.all([
+    // "*": include_image / output_kind exist once the Prompt Chain Tool migration is applied.
     db.from("humor_prompt_chain_steps")
-      .select("id,position,name,llm_model_id,system_prompt,user_prompt,output_schema,updated_at,humor_llm_models(id,display_name,humor_llm_providers(name))")
+      .select("*,humor_llm_models(id,display_name,humor_llm_providers(name))")
       .eq("chain_id", id).order("position"),
     db.from("humor_generations").select("id,model,status,failure_stage,created_at", { count: "exact" })
       .eq("prompt_version", chain.prompt_version).order("created_at", { ascending: false }).limit(10),
     db.from("humor_generation_examples").select("id", { count: "exact", head: true }).eq("chain_id", id),
-    refOptions(db, STEP_RESOURCE),
   ]);
+  const tool = process.env.PROMPT_CHAIN_TOOL_URL?.startsWith("https://") ? `${process.env.PROMPT_CHAIN_TOOL_URL.replace(/\/$/, "")}/chains/${id}` : null;
+  const models = [...new Set((steps ?? []).map((s) => (s as unknown as Step).humor_llm_models?.display_name ?? "No model"))];
   const stepRows = (steps ?? []) as unknown as Step[];
   const share = shareOf(chain.humor_prompt_chain_mix);
   const notice = Object.keys(NOTICES).find((key) => query[key.split("=")[0]] === key.split("=")[1]);
@@ -57,13 +58,20 @@ export default async function PromptChain({ params, searchParams }: { params: Pr
       {notice && <div className={`notice notice-${NOTICES[notice][0]}`} role="status">{NOTICES[notice][1]}</div>}
 
       <section className="card">
-        <h2>Steps</h2>
-        <p className="sub">Run in order; each step&apos;s output feeds the next. Open a step to edit or delete it.</p>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
+          <div>
+            <h2>Steps</h2>
+            <p className="sub">Read-only here. Steps, their order and the chain&apos;s model ({models.length ? models.join(" + ") : "none yet"}) are edited in the Prompt Chain Tool, which checks placeholders and keeps a version of every change.</p>
+          </div>
+          {tool ? <a className="btn btn-primary" href={tool}>Edit in Prompt Chain Tool →</a> : <span className="badge badge-warn">Set PROMPT_CHAIN_TOOL_URL to link the Prompt Chain Tool</span>}
+        </div>
         <div className="stack">
           {stepRows.map((step) => (
             <details key={step.id} className="card" style={{ boxShadow: "none" }}>
               <summary style={{ cursor: "pointer", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                 <span className="badge badge-brand">Step {step.position}</span><b>{step.name}</b>
+                {step.include_image !== false && <span className="badge">Sees photo</span>}
+                <span className="badge">{step.output_kind === "text" ? "Returns text" : "Returns captions"}</span>
                 <span className="muted">
                   {step.humor_llm_models
                     ? <Link href={`/ai/llm-models/${step.humor_llm_models.id}`}>{step.humor_llm_models.display_name}</Link>
@@ -71,23 +79,14 @@ export default async function PromptChain({ params, searchParams }: { params: Pr
                   {step.humor_llm_models?.humor_llm_providers && ` · ${step.humor_llm_models.humor_llm_providers.name}`} · updated {when(step.updated_at)}
                 </span>
               </summary>
-              <div style={{ marginTop: 12 }}>
-                <CatalogForm slug={STEP_RESOURCE.slug} chainId={id} initial={step} refs={refs} />
-                <form action={deleteStep} style={{ marginTop: 10 }}>
-                  <input type="hidden" name="chain_id" value={id} />
-                  <input type="hidden" name="id" value={step.id} />
-                  <ConfirmButton message={`Delete step ${step.position}? This cannot be undone.`}>Delete step</ConfirmButton>
-                </form>
+              <div className="stack" style={{ marginTop: 12, gap: 10 }}>
+                <div><span style={{ fontWeight: 800, fontSize: 13 }}>System prompt</span><pre className="prompt">{step.system_prompt}</pre></div>
+                <div><span style={{ fontWeight: 800, fontSize: 13 }}>User prompt</span><pre className="prompt">{step.user_prompt}</pre></div>
+                {step.output_schema != null && <div><span style={{ fontWeight: 800, fontSize: 13 }}>Output JSON schema</span><pre className="prompt">{JSON.stringify(step.output_schema, null, 2)}</pre></div>}
               </div>
             </details>
           ))}
-          {!stepRows.length && <p className="empty">This chain has no steps yet.</p>}
-          <details className="card" style={{ boxShadow: "none" }} open={!stepRows.length}>
-            <summary style={{ cursor: "pointer", fontWeight: 800 }}>+ Add step</summary>
-            <div style={{ marginTop: 12 }}>
-              <CatalogForm slug={STEP_RESOURCE.slug} chainId={id} refs={refs} defaults={{ position: (stepRows.at(-1)?.position ?? 0) + 1 }} />
-            </div>
-          </details>
+          {!stepRows.length && <p className="empty">This chain has no steps yet. Add them in the Prompt Chain Tool.</p>}
         </div>
       </section>
 
