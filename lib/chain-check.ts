@@ -14,6 +14,8 @@ export function firstStep(steps: ChainStep[] | null | undefined) {
 export function chainIssue(steps: ChainStep[] | null | undefined): string | null {
   const step = firstStep(steps);
   if (!step) return "No steps yet.";
+  // Multi-step chains (Prompt Chain Tool) run in the tool only; members get single-step chains.
+  if ((steps ?? []).length > 1) return `Has ${(steps ?? []).length} steps; the member app runs single-step chains only (run it in the Prompt Chain Tool).`;
   const model = step.humor_llm_models;
   if (!model) return "Step 1 has no model.";
   if (!model.is_active) return `${model.display_name} is inactive.`;

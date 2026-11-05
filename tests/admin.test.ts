@@ -275,7 +275,7 @@ import { chainIssue } from "../lib/chain-check";
   const m = (extra = {}) => ({ display_name: "GPT-6 Astra", model_id: "gpt-6-astra", is_active: true, supports_vision: true, humor_llm_providers: { slug: "openai", name: "OpenAI" }, ...extra });
   const s = (model: ReturnType<typeof m> | null, user_prompt = "Image: [image]\nDirection: {direction}", position = 1) => ({ position, user_prompt, humor_llm_models: model });
   assert.equal(chainIssue([s(m())]), null);
-  assert.equal(chainIssue([s(null, "x", 2), s(m(), undefined, 1)]), null, "step 1 is the lowest position");
+  assert.match(chainIssue([s(null, "x", 2), s(m(), undefined, 1)])!, /single-step chains only/, "multi-step chains are for the tool");
   assert.match(chainIssue([])!, /No steps/);
   assert.match(chainIssue([s(null)])!, /no model/);
   assert.match(chainIssue([s(m({ is_active: false }))])!, /inactive/);
