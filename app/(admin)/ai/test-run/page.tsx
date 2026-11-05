@@ -7,8 +7,8 @@ import { serviceClient } from "@/lib/supabase/service";
 import { MissingTable } from "@/components/MissingTable";
 import { TestRunForm } from "@/components/TestRunForm";
 export const metadata: Metadata = { title: "Test run" };
-// Provider calls can take a while; 45 s timeout plus image preparation.
-export const maxDuration = 60;
+// A chain runs up to 4 provider calls in a row.
+export const maxDuration = 120;
 
 type Model = { id: string; display_name: string; model_id: string; is_active: boolean; humor_llm_providers: { slug: string; name: string } | null };
 export default async function TestRun() {
@@ -28,7 +28,7 @@ export default async function TestRun() {
         <div>
           <span className="eyebrow">Try a real model</span>
           <h1>Test run.</h1>
-          <p>Run the first step of a prompt chain on one photo with any model from <Link href="/ai/llm-models">LLM models &amp; providers</Link>, and see exactly what comes back. Nothing is saved unless you keep a caption as a <Link href="/ai/examples">generation example</Link>, and members are not affected; each run is billed by the provider.</p>
+          <p>Run every step of a prompt chain on one photo, exactly as a member&apos;s generation would, with its own models or one model from <Link href="/ai/llm-models">LLM models &amp; providers</Link>, and see exactly what comes back. Nothing is saved unless you keep a caption as a <Link href="/ai/examples">generation example</Link>, and members are not affected; each run is billed by the provider.</p>
         </div>
       </header>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>

@@ -224,7 +224,7 @@ assert.equal(step({ system_prompt: " " }).ok, false);
 console.log("PASS catalog validation and database error messages.");
 
 // Provider connectors with a fake fetch: request shape, parsing, errors, no network.
-import { fillUserPrompt, parseCaptions, runCaptions, type RunInput } from "../lib/llm";
+import { fillChainPrompt, fillUserPrompt, parseCaptions, runCaptions, runChain, type ChainRunStep, type RunInput } from "../lib/llm";
 void (async () => {
   const four = JSON.stringify({ captions: [["A", "deadpan"], ["B", "roast"], ["C", "pun"], ["D", "absurd"]].map(([caption, style]) => ({ caption, style })) });
   const calls: { url: string; init: RequestInit }[] = [];
@@ -266,22 +266,51 @@ void (async () => {
   const legacy = parseCaptions(JSON.stringify({ description: "A meme face.", captions: ["a", "b", "c", "d"] }));
   assert.deepEqual(legacy.captions.map((c) => c.caption), ["a", "b", "c", "d"]); assert.equal(legacy.description, "A meme face.");
   assert.equal(legacy.warnings.length, 1); assert.match(legacy.warnings[0], /No joke styles/);
+  // A three-step chain: text steps feed later ones; only step 1 sees the photo.
+  assert.equal(fillChainPrompt("{step1}|{previous}|{direction}|{step9}", "", ["a", "b"]), "a|b|none|");
+  const step = (extra: Partial<ChainRunStep>): ChainRunStep => ({ provider: "google", model: "gemini-x", systemPrompt: "sys", userTemplate: "", schema: null, maxOutputTokens: null, temperature: null, includeImage: false, outputKind: "text", ...extra });
+  const chainSteps = [step({ userTemplate: "Look. {direction}", includeImage: true }), step({ provider: "openai", model: "gpt-test", userTemplate: "Angles on {previous}" }), step({ userTemplate: "{step1} / {previous}", outputKind: "captions", schema: { type: "object" } })];
+  const g = (text: string) => ({ status: 200, body: { candidates: [{ content: { parts: [{ text }] } }], usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 } } });
+  calls.length = 0;
+  const chained = await runChain(chainSteps, { base64: "QUJD", mime: "image/jpeg" }, "finals", { GEMINI_API_KEY: "g", OPENAI_API_KEY: "o" },
+    fake([g("A lion statue."), { status: 200, body: { choices: [{ message: { content: "1. Lion has finals" } }], usage: { total_tokens: 3 } } }, g(four)]));
+  assert.equal(chained.ok, true); assert.equal(chained.captions.length, 4); assert.equal(chained.steps.length, 3);
+  assert.equal(chained.prompt, "A lion statue. / 1. Lion has finals"); assert.equal(chained.usage.total, 7);
+  const bodies = calls.map((c) => JSON.parse(String(c.init.body)));
+  assert.equal(bodies[0].contents[0].parts.length, 2, "step 1 sends the photo"); assert.equal(bodies[0].generationConfig.responseMimeType, undefined, "text step is plain text");
+  assert.equal(bodies[0].contents[0].parts[0].text, "Look. finals");
+  assert.equal(bodies[1].response_format, undefined); assert.equal(bodies[1].messages[1].content.length, 1, "no photo on step 2");
+  assert.equal(bodies[2].contents[0].parts.length, 1); assert.equal(bodies[2].generationConfig.responseMimeType, "application/json");
+  const broken = await runChain(chainSteps, { base64: "QUJD", mime: "image/jpeg" }, "", { GEMINI_API_KEY: "g" }, fake([g("desc")]));
+  assert.equal(broken.ok, false); assert.match(broken.error!, /^Step 2: OPENAI_API_KEY is not set/); assert.equal(broken.steps.length, 2);
   console.log("PASS provider connectors (OpenAI, Gemini), schema fallback and caption checks.");
 })().catch((error) => { console.error(error); process.exit(1); });
 
 // Which chains can serve members (mirrors the member app's routing checks).
-import { chainIssue } from "../lib/chain-check";
+import { chainIssue, chainModels } from "../lib/chain-check";
 {
   const m = (extra = {}) => ({ display_name: "GPT-6 Astra", model_id: "gpt-6-astra", is_active: true, supports_vision: true, humor_llm_providers: { slug: "openai", name: "OpenAI" }, ...extra });
   const s = (model: ReturnType<typeof m> | null, user_prompt = "Image: [image]\nDirection: {direction}", position = 1) => ({ position, user_prompt, humor_llm_models: model });
   assert.equal(chainIssue([s(m())]), null);
-  assert.match(chainIssue([s(null, "x", 2), s(m(), undefined, 1)])!, /single-step chains only/, "multi-step chains are for the tool");
   assert.match(chainIssue([])!, /No steps/);
   assert.match(chainIssue([s(null)])!, /no model/);
   assert.match(chainIssue([s(m({ is_active: false }))])!, /inactive/);
   assert.match(chainIssue([s(m({ supports_vision: false }))])!, /does not accept images/);
   assert.match(chainIssue([s(m({ humor_llm_providers: { slug: "anthropic", name: "Anthropic" } }))])!, /no connector for Anthropic/);
-  assert.match(chainIssue([s(m(), "Image: [image]\nDirection: none")])!, /no \{direction\}/);
+  assert.match(chainIssue([s(m(), "Image: [image]\nDirection: none")])!, /\{direction\}/);
+  // Multi-step: look → angles → captions, the shape of campus-captions-v4.
+  const t = (position: number, user_prompt: string, extra = {}) => ({ ...s(m(), user_prompt, position), output_kind: "text", include_image: false, ...extra });
+  const three = [t(1, "Describe. {direction}", { include_image: true }), t(2, "Angles on {previous}"), t(3, "From {step1} and {previous}", { output_kind: "captions" })];
+  assert.equal(chainIssue([three[2], three[0], three[1]]), null, "ordered by position");
+  assert.equal(chainIssue([three[0], three[1], { ...three[2], humor_llm_models: m({ supports_vision: false, display_name: "Text only" }) }]), null, "vision only where a step sees the photo");
+  assert.match(chainIssue([three[0], three[1], { ...three[2], output_kind: "text" }])!, /last step returns text/);
+  assert.match(chainIssue([{ ...three[0], output_kind: "captions" }, three[1], three[2]])!, /Step 1 returns captions before the last step/);
+  assert.match(chainIssue([three[0], three[1], { ...three[2], user_prompt: "{step3}" }])!, /\{step3\}, which has not run yet/);
+  assert.match(chainIssue([{ ...three[0], user_prompt: "{previous} {direction}" }, three[1], three[2]])!, /Step 1 uses \{previous\}/);
+  assert.match(chainIssue([{ ...three[0], include_image: false }, three[1], three[2]])!, /No step sees the photo/);
+  assert.match(chainIssue([...three.slice(0, 2), t(3, "x"), t(4, "y"), t(5, "z", { output_kind: "captions" })])!, /at most 4/);
+  assert.deepEqual(chainModels(three), { model: "GPT-6 Astra", provider: "OpenAI" });
+  assert.deepEqual(chainModels([three[0], { ...three[1], humor_llm_models: m({ display_name: "Gemini", humor_llm_providers: { slug: "google", name: "Google" } }) }]), { model: "2 models", provider: "OpenAI + Google" });
   console.log("PASS member chain checks.");
 }
 
