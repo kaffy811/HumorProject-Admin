@@ -101,7 +101,7 @@ export async function chooseChainForMembers(_: CatalogState, form: FormData): Pr
   if (!UUID.test(chosen)) return { error: "Choose a prompt chain." };
   const db = serviceClient(admin.id);
   const { data: chains, error: read } = await db.from("humor_prompt_chains")
-    .select("id,name,humor_prompt_chain_steps(position,user_prompt,humor_llm_models(display_name,model_id,is_active,supports_vision,humor_llm_providers(slug,name)))");
+    .select("id,name,humor_prompt_chain_steps(*,humor_llm_models(display_name,model_id,is_active,supports_vision,humor_llm_providers(slug,name)))");
   if (read) return { error: read.message };
   const chain = (chains ?? []).find((c) => c.id === chosen);
   if (!chain) return { error: "That prompt chain no longer exists." };

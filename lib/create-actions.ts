@@ -7,7 +7,7 @@ import { requireAdmin } from "./admin";
 import { serviceClient } from "./supabase/service";
 import { storageBucket } from "./supabase/schema";
 import { MAX_UPLOAD_BYTES, sniffImage } from "./media-rules";
-import { runCaptions } from "./llm";
+import { runChain, type StepTrace } from "./llm";
 import { BUILTIN_VERSION, fillPrompt, loadGenerationRoute, type GenerationRoute } from "./generation-route";
 import { BUILTIN_USER_TEMPLATE, GENERATION_CONFIG, SYSTEM_PROMPT, builtinModel } from "./builtin-prompt";
 import { acceptCaptions, finalText, MAX_DIRECTION, type Candidate } from "./create-rules";
@@ -72,7 +72,7 @@ async function draftImage(imageId: string) {
   return data && data.status === "processing" && data.storage_path ? data as { id: string; user_id: string; status: string; storage_path: string; description: string | null } : null;
 }
 
-type Attempt = { provider: string; model: string; promptVersion: string; promptTokenCount: number; candidatesTokenCount: number; totalTokenCount: number; latencyMs: number; error?: string };
+type Attempt = { provider: string; model: string; promptVersion: string; promptTokenCount: number; candidatesTokenCount: number; totalTokenCount: number; latencyMs: number; error?: string; steps?: Omit<StepTrace, "prompt" | "output">[] };
 
 export async function generateCaptions(imageId: string, directionInput: string): Promise<GenerateResult> {
   const admin = await requireAdmin();
@@ -87,11 +87,12 @@ export async function generateCaptions(imageId: string, directionInput: string):
   const jpeg = await sharp(stored).resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true }).jpeg({ quality: 85 }).toBuffer();
 
   // Same choice as a member's generation: the admin prompt-chain mix, else the built-in prompt.
-  const builtin: GenerationRoute = {
+  const builtinStep = {
     provider: "google", model: builtinModel(), systemPrompt: SYSTEM_PROMPT, userTemplate: BUILTIN_USER_TEMPLATE,
     schema: GENERATION_CONFIG.responseJsonSchema, maxOutputTokens: GENERATION_CONFIG.maxOutputTokens, temperature: null,
-    promptVersion: BUILTIN_VERSION, configured: false,
+    includeImage: true, outputKind: "captions" as const,
   };
+  const builtin: GenerationRoute = { ...builtinStep, steps: [builtinStep], promptVersion: BUILTIN_VERSION, configured: false };
   const chosen = await loadGenerationRoute(db).catch((e: Error) => ({ route: null, reason: e.message }));
   const routes = chosen.route ? [chosen.route, builtin] : [builtin, builtin];
   const first = routes[0];
@@ -107,17 +108,14 @@ export async function generateCaptions(imageId: string, directionInput: string):
 
   const attempts: Attempt[] = [];
   for (const route of routes) {
-    const userPrompt = fillPrompt(route.userTemplate, direction);
-    const result = await runCaptions({
-      provider: route.provider, model: route.model, systemPrompt: route.systemPrompt, userPrompt,
-      image: { base64: jpeg.toString("base64"), mime: "image/jpeg" },
-      maxOutputTokens: route.maxOutputTokens, temperature: route.temperature, schema: route.schema,
-    }, process.env);
+    const result = await runChain(route.steps, { base64: jpeg.toString("base64"), mime: "image/jpeg" }, direction, process.env);
+    const userPrompt = result.prompt || fillPrompt(route.userTemplate, direction);
     const accepted = result.ok ? acceptCaptions(result.captions) : null;
     attempts.push({
       provider: route.provider, model: route.model, promptVersion: route.promptVersion, latencyMs: result.latencyMs,
       promptTokenCount: result.usage.input, candidatesTokenCount: result.usage.output, totalTokenCount: result.usage.total,
       error: !result.ok ? result.error : accepted && !accepted.ok ? `rejected: ${accepted.reason}` : undefined,
+      ...(route.steps.length > 1 ? { steps: result.steps.map((t) => ({ position: t.position, provider: t.provider, model: t.model, outputKind: t.outputKind, error: t.error, usage: t.usage, latencyMs: t.latencyMs })) } : {}),
     });
     if (!accepted?.ok) continue;
     const candidates: Candidate[] = accepted.captions.map((c) => ({ id: randomUUID(), style: c.style, text: c.caption, originalText: c.caption, source: "generated" }));
