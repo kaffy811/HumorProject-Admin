@@ -45,7 +45,7 @@ export default async function PromptChains({ searchParams }: { searchParams: Pro
         <div>
           <span className="eyebrow">Create · read · update · delete · <span className="mono">humor_prompt_chains</span></span>
           <h1>Prompt chains.</h1>
-          <p>Each chain is a versioned recipe of LLM steps that turns a photo into four captions; its step 1 model decides its tab (Gemini or GPT). A chain may have up to 4 steps for members (for example: look at the photo, find the angles, write the captions). Its prompt version is stamped on every run, so the usage below is real. Open a chain to edit it and its steps. Which chain members get is chosen in <Link href="/ai#members">Overview</Link> or <Link href="/ai/llm-models#members">LLM models &amp; providers</Link>. Adding steps after the first, reordering, switching a whole chain to another model and step-by-step runs live in the Prompt Chain Tool.</p>
+          <p>Each chain is a versioned recipe of LLM steps that turns a photo into four captions; its step 1 model decides its tab (Gemini or GPT). A chain may have up to 4 steps for members (for example: look at the photo, find the angles, write the captions). Its prompt version is stamped on every run, so the usage below is real. Open a chain to see its steps and edit its details; steps themselves are edited in the Prompt Chain Tool. Which chain members get is chosen in <Link href="/ai#members">Overview</Link> or <Link href="/ai/llm-models#members">LLM models &amp; providers</Link>. Adding steps after the first, reordering, switching a whole chain to another model and step-by-step runs live in the Prompt Chain Tool.</p>
         </div>
         {/* The tool is a separate app (kaffy811/HumorProject-PromptChains); its URL is set per deployment. */}
         {process.env.PROMPT_CHAIN_TOOL_URL?.startsWith("https://") && <a className="btn btn-primary" href={process.env.PROMPT_CHAIN_TOOL_URL}>Open the Prompt Chain Tool →</a>}
@@ -55,7 +55,7 @@ export default async function PromptChains({ searchParams }: { searchParams: Pro
           {params.deleted && <div className="notice notice-good" role="status">Prompt chain deleted.</div>}
           <details className="card">
             <summary style={{ cursor: "pointer", fontWeight: 800 }}>+ Add prompt chain</summary>
-            <p className="sub" style={{ marginTop: 10 }}>Add its steps on its page (step 1 picks the model), then choose it for members in Overview.</p>
+            <p className="sub" style={{ marginTop: 10 }}>Add its steps in the Prompt Chain Tool (the chain picks one model there), then choose it for members in Overview.</p>
             <CatalogForm slug="prompt-chains" refs={{}} />
           </details>
           {tabs.length > 1 && (
