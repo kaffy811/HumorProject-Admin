@@ -53,3 +53,19 @@ export function chainIssue(steps: ChainStep[] | null | undefined): string | null
   if (!ordered.some((s) => s.user_prompt.includes("{direction}"))) return "No user prompt has {direction}, so members' directions would be lost.";
   return null;
 }
+
+// Why a model cannot run a chain for members, or null. The model applies to
+// every step, so it must be active, have a connector, and read images when a
+// step sees the photo.
+export function modelIssue(model: ChainModel, steps: ChainStep[] | null | undefined): string | null {
+  if (!model.is_active) return "Inactive: activate it under LLM models first.";
+  if (!MEMBER_PROVIDERS.includes(model.humor_llm_providers?.slug ?? "")) return `The member app has no connector for ${model.humor_llm_providers?.name ?? "this provider"}.`;
+  const seeing = orderedSteps(steps).map((s, i) => ({ n: i + 1, sees: s.include_image ?? true })).filter((s) => s.sees).map((s) => s.n);
+  if (seeing.length && !model.supports_vision) return `Cannot read images, but step ${seeing.join(", ")} sees the photo.`;
+  return null;
+}
+
+// The chain's steps as they would be with `model` on every step.
+export function withModel(steps: ChainStep[] | null | undefined, model: ChainModel): ChainStep[] {
+  return orderedSteps(steps).map((s) => ({ ...s, humor_llm_models: model }));
+}

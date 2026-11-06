@@ -287,7 +287,7 @@ void (async () => {
 })().catch((error) => { console.error(error); process.exit(1); });
 
 // Which chains can serve members (mirrors the member app's routing checks).
-import { chainIssue, chainModels } from "../lib/chain-check";
+import { chainIssue, chainModels, modelIssue, withModel } from "../lib/chain-check";
 {
   const m = (extra = {}) => ({ display_name: "GPT-6 Astra", model_id: "gpt-6-astra", is_active: true, supports_vision: true, humor_llm_providers: { slug: "openai", name: "OpenAI" }, ...extra });
   const s = (model: ReturnType<typeof m> | null, user_prompt = "Image: [image]\nDirection: {direction}", position = 1) => ({ position, user_prompt, humor_llm_models: model });
@@ -311,6 +311,15 @@ import { chainIssue, chainModels } from "../lib/chain-check";
   assert.match(chainIssue([...three.slice(0, 2), t(3, "x"), t(4, "y"), t(5, "z", { output_kind: "captions" })])!, /at most 4/);
   assert.deepEqual(chainModels(three), { model: "GPT-6 Astra", provider: "OpenAI" });
   assert.deepEqual(chainModels([three[0], { ...three[1], humor_llm_models: m({ display_name: "Gemini", humor_llm_providers: { slug: "google", name: "Google" } }) }]), { model: "2 models", provider: "OpenAI + Google" });
+  // Model for members: any model is an option, checked against the chain it would run.
+  const gpt = m({ display_name: "GPT-6 Astra" }), textOnly = m({ display_name: "Text", supports_vision: false });
+  assert.equal(modelIssue(gpt, three), null);
+  assert.match(modelIssue(textOnly, three)!, /Cannot read images, but step 1 sees the photo/);
+  assert.equal(modelIssue(textOnly, [{ ...three[0], include_image: false }, three[1], three[2]]), null, "fine when no step sees the photo");
+  assert.match(modelIssue(m({ is_active: false }), three)!, /Inactive/);
+  assert.match(modelIssue(m({ humor_llm_providers: { slug: "anthropic", name: "Anthropic" } }), three)!, /no connector for Anthropic/);
+  assert.ok(withModel(three, gpt).every((st) => st.humor_llm_models === gpt));
+  assert.deepEqual(withModel([three[2], three[0]], gpt).map((st) => st.position), [1, 3], "ordered by position");
   console.log("PASS member chain checks.");
 }
 
