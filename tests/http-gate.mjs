@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import http from "node:http";
 import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 
 const SUPA_PORT = 54399, APP_PORT = 3011;
 const ADMIN = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -16,7 +17,13 @@ const profiles = [
 ];
 const CHAIN = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const FIXTURES = {
-  humor_prompt_chains: [{ id: CHAIN, prompt_version: "campus-captions-v4", name: "Campus captions (3 steps)", description: "Members' chain.", created_at: "2026-11-01T00:00:00Z", updated_at: "2026-11-01T00:00:00Z", humor_prompt_chain_mix: { share: 100 } }],
+  humor_prompt_chains: [{ id: CHAIN, prompt_version: "campus-captions-v4", name: "Campus captions (3 steps)", description: "Members' chain.", created_at: "2026-11-01T00:00:00Z", updated_at: "2026-11-01T00:00:00Z", humor_prompt_chain_mix: { share: 100 },
+    humor_prompt_chain_steps: [{ position: 1, include_image: true, output_kind: "captions", user_prompt: "Describe. {direction}", humor_llm_models: { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", display_name: "Gemini 3.8 Flash", model_id: "gemini-3.8-flash", is_active: true, supports_vision: true, humor_llm_providers: { slug: "google", name: "Google Gemini" } } }] }],
+  humor_llm_models: [
+    { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", display_name: "Gemini 3.8 Flash", model_id: "gemini-3.8-flash", is_active: true, supports_vision: true, humor_llm_providers: { slug: "google", name: "Google Gemini" } },
+    { id: "99999999-9999-4999-8999-999999999999", display_name: "GPT-6 Astra", model_id: "gpt-6-astra", is_active: true, supports_vision: true, humor_llm_providers: { slug: "openai", name: "OpenAI" } },
+    { id: "88888888-8888-4888-8888-888888888888", display_name: "Text Only", model_id: "text-only", is_active: true, supports_vision: false, humor_llm_providers: { slug: "openai", name: "OpenAI" } },
+  ],
   humor_prompt_chain_steps: [{ id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", chain_id: CHAIN, position: 1, name: "Look at the photo", llm_model_id: null, include_image: true, output_kind: "text", system_prompt: "Describe precisely.", user_prompt: "Describe. Direction: {direction}", output_schema: null, updated_at: "2026-11-01T00:00:00Z", humor_llm_models: { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", display_name: "Gemini 3.8 Flash", humor_llm_providers: { name: "Google Gemini" } } }],
 };
 const b64 = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -86,10 +93,15 @@ try {
   const users = await (await get("/users", { cookie: cookie(ADMIN) })).text();
   assert.match(users, /@member/); assert.match(users, /Superadmin/);
   // Admins use the console but not team management.
+  // Model for members lists every model (OpenAI included), greys out what cannot run the chain, marks the one in use.
+  const overview = await (await get("/ai", { cookie: cookie(ADMIN) })).text();
+  for (const text of ["GPT-6 Astra · OpenAI", "Gemini 3.8 Flash · Google Gemini", "Cannot read images, but step 1 sees the photo", "In use", "Campus captions \\(3 steps\\)"]) assert.match(overview, new RegExp(text), `members picker: ${text}`);
   // The chain list has no provider tabs or model column.
   const chainList = await (await get("/ai/prompt-chains", { cookie: cookie(ADMIN) })).text();
   assert.match(chainList, /Campus captions \(3 steps\)/);
   assert.doesNotMatch(chainList, /aria-label="Provider"|<th>Model<\/th>/, "no grouping by model");
+  assert.match(chainList, /href="https:\/\/tool\.example\/chains"/, "banner links to the tool");
+  assert.match(chainList, new RegExp(`href="https://tool.example/chains/${CHAIN}"`), "each chain opens in the tool");
   // Steps are read-only here and link to the Prompt Chain Tool.
   const chainPage = await (await get(`/ai/prompt-chains/${CHAIN}`, { cookie: cookie(ADMIN) })).text();
   assert.match(chainPage, new RegExp(`href="https://tool.example/chains/${CHAIN}"`), "links to the tool");
@@ -135,6 +147,19 @@ try {
   const action = await fetch(`http://127.0.0.1:${APP_PORT}/posts/new`, { method: "POST", redirect: "manual", headers: { cookie: cookie(MEMBER), "next-action": "x", origin: `http://127.0.0.1:${APP_PORT}` }, body: "x" });
   assert.equal(action.status, 307);
   console.log("PASS anonymous → /login, members and non-Google sessions → /denied, superadmins see everything, admins everything but team management, members can request access, actions blocked for non-admins.");
+  if (process.env.SCREENSHOTS) {
+    const { chromium } = createRequire(import.meta.url)("playwright");
+    const browser = await chromium.launch();
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+    const [name, value] = cookie(ADMIN).split(/=(.*)/s);
+    await ctx.addCookies([{ name, value, domain: "127.0.0.1", path: "/" }]);
+    const page = await ctx.newPage();
+    for (const [label, path] of [["members", "/ai#members"], ["chains", "/ai/prompt-chains"]]) {
+      await page.goto(`http://127.0.0.1:${APP_PORT}${path}`);
+      await page.screenshot({ path: `${process.env.SCREENSHOTS}/admin-${label}.png`, fullPage: true });
+    }
+    await browser.close();
+  }
 } finally {
   process.kill(-app.pid); supa.close();
 }

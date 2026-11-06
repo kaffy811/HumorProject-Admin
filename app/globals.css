@@ -258,3 +258,5 @@ details.card summary { list-style: none; }
 .release-card { margin: 0; border: 2px solid var(--ink); box-shadow: var(--shadow); background: var(--paper); }
 .release-caption { margin: 0; padding: 16px; font-weight: 800; font-size: 19px; line-height: 1.35; border-bottom: 2px solid var(--ink); }
 .release-card img { display: block; width: 100%; }
+
+.tool-banner { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; border-left: 8px solid var(--tomato); }

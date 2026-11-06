@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin";
 import { resource, shareOf } from "@/lib/catalog";
 import { deleteRecord } from "@/lib/catalog-actions";
+import { promptChainToolUrl } from "@/lib/tool-url";
 import { serviceClient } from "@/lib/supabase/service";
 import { n, when } from "@/lib/format";
 import { CatalogForm } from "@/components/CatalogForm";
@@ -39,7 +40,7 @@ export default async function PromptChain({ params, searchParams }: { params: Pr
       .eq("prompt_version", chain.prompt_version).order("created_at", { ascending: false }).limit(10),
     db.from("humor_generation_examples").select("id", { count: "exact", head: true }).eq("chain_id", id),
   ]);
-  const tool = process.env.PROMPT_CHAIN_TOOL_URL?.startsWith("https://") ? `${process.env.PROMPT_CHAIN_TOOL_URL.replace(/\/$/, "")}/chains/${id}` : null;
+  const tool = promptChainToolUrl(`/chains/${id}`);
   const models = [...new Set((steps ?? []).map((s) => (s as unknown as Step).humor_llm_models?.display_name ?? "No model"))];
   const stepRows = (steps ?? []) as unknown as Step[];
   const share = shareOf(chain.humor_prompt_chain_mix);
@@ -63,7 +64,7 @@ export default async function PromptChain({ params, searchParams }: { params: Pr
             <h2>Steps</h2>
             <p className="sub">Read-only here. Steps, their order and the chain&apos;s model ({models.length ? models.join(" + ") : "none yet"}) are edited in the Prompt Chain Tool, which checks placeholders and keeps a version of every change.</p>
           </div>
-          {tool ? <a className="btn btn-primary" href={tool}>Edit in Prompt Chain Tool →</a> : <span className="badge badge-warn">Set PROMPT_CHAIN_TOOL_URL to link the Prompt Chain Tool</span>}
+          <a className="btn btn-primary" href={tool} target="_blank" rel="noopener">Edit in Prompt Chain Tool ↗</a>
         </div>
         <div className="stack">
           {stepRows.map((step) => (

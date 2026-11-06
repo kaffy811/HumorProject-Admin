@@ -6,6 +6,7 @@ import { fetchAll } from "@/lib/data";
 import { serviceClient } from "@/lib/supabase/service";
 import { n, pct, when } from "@/lib/format";
 import { CatalogForm } from "@/components/CatalogForm";
+import { promptChainToolUrl } from "@/lib/tool-url";
 import { MissingTable } from "@/components/MissingTable";
 export const metadata: Metadata = { title: "Prompt chains" };
 
@@ -39,14 +40,23 @@ export default async function PromptChains({ searchParams }: { searchParams: Pro
         <div>
           <span className="eyebrow">Create · read · update · delete · <span className="mono">humor_prompt_chains</span></span>
           <h1>Prompt chains.</h1>
-          <p>Each chain is a versioned recipe of LLM steps that turns a photo into four captions; its one model (Gemini or GPT) is chosen and switched in the Prompt Chain Tool. A chain may have up to 4 steps for members (for example: look at the photo, find the angles, write the captions). Its prompt version is stamped on every run, so the usage below is real. Open a chain to see its steps and edit its details; steps themselves are edited in the Prompt Chain Tool. Which chain members get is chosen in <Link href="/ai#members">Overview</Link> or <Link href="/ai/llm-models#members">LLM models &amp; providers</Link>. Adding steps after the first, reordering, switching a whole chain to another model and step-by-step runs live in the Prompt Chain Tool.</p>
+          <p>Each chain is a versioned recipe of LLM steps that turns a photo into four captions; its one model (Gemini or GPT) is chosen and switched in the Prompt Chain Tool. A chain may have up to 4 steps for members (for example: look at the photo, find the angles, write the captions). Its prompt version is stamped on every run, so the usage below is real. Design ↗ opens a chain in the Prompt Chain Tool; Details shows its steps read-only and edits its name and description here. The model members get is chosen in <Link href="/ai#members">Overview</Link> or <Link href="/ai/llm-models#members">LLM models &amp; providers</Link>.</p>
         </div>
-        {/* The tool is a separate app (kaffy811/HumorProject-PromptChains); its URL is set per deployment. */}
-        {process.env.PROMPT_CHAIN_TOOL_URL?.startsWith("https://") && <a className="btn btn-primary" href={process.env.PROMPT_CHAIN_TOOL_URL}>Open the Prompt Chain Tool →</a>}
       </header>
       {error ? <MissingTable table="humor_prompt_chains" /> : (
         <div className="stack">
           {params.deleted && <div className="notice notice-good" role="status">Prompt chain deleted.</div>}
+          {/* Chains are designed in the separate Prompt Chain Tool: canvas, steps, variables, test runs, history. */}
+          <section className="card tool-banner">
+            <div>
+              <h2 style={{ margin: 0 }}>Design and edit chains in the Prompt Chain Tool</h2>
+              <p className="sub" style={{ margin: "6px 0 0" }}>Steps, their order and prompts, the chain&apos;s model (Gemini or GPT), variables, single-step tests, full runs and version history all live there. Superadmins sign in with the same Google account.</p>
+            </div>
+            <div className="row">
+              <a className="btn btn-primary" href={promptChainToolUrl("/chains")} target="_blank" rel="noopener">Open the Prompt Chain Tool ↗</a>
+              <a className="btn" href={promptChainToolUrl("/chains?new=1")} target="_blank" rel="noopener">+ New chain in the tool ↗</a>
+            </div>
+          </section>
           <details className="card">
             <summary style={{ cursor: "pointer", fontWeight: 800 }}>+ Add prompt chain</summary>
             <p className="sub" style={{ marginTop: 10 }}>Add its steps in the Prompt Chain Tool (the chain picks one model there), then choose it for members in Overview.</p>
@@ -68,7 +78,10 @@ export default async function PromptChains({ searchParams }: { searchParams: Pro
                       <td className="r num">{u.runs ? <Link href={`/ai/runs?version=${encodeURIComponent(c.prompt_version)}`}>{n(u.runs)}</Link> : 0}</td>
                       <td className="r num">{pct(u.completed, u.runs)}</td>
                       <td className="muted">{when(u.last)}</td>
-                      <td><Link className="btn" href={`/ai/prompt-chains/${c.id}`}>Edit</Link></td>
+                      <td><div className="row" style={{ flexWrap: "nowrap" }}>
+                        <a className="btn btn-primary" href={promptChainToolUrl(`/chains/${c.id}`)} target="_blank" rel="noopener" title="Edit steps in the Prompt Chain Tool">Design ↗</a>
+                        <Link className="btn" href={`/ai/prompt-chains/${c.id}`}>Details</Link>
+                      </div></td>
                     </tr>
                   );
                 })}
