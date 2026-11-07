@@ -247,6 +247,10 @@ void (async () => {
   calls.length = 0;
   const fallback = await runCaptions(input, { OPENAI_API_KEY: "k" }, fake([{ status: 400, body: { error: { message: "Invalid schema for response_format" } } }, { status: 200, body: { choices: [{ message: { content: four } }] } }]));
   assert.equal(fallback.ok, true, "schema rejection retries in JSON mode"); assert.equal(JSON.parse(String(calls[1].init.body)).response_format.type, "json_object");
+  // OpenAI's JSON mode needs the word JSON in the messages; a prompt without it gets one added.
+  calls.length = 0;
+  await runCaptions({ ...input, systemPrompt: "Write captions.", userPrompt: "User input: subway", schema: null }, { OPENAI_API_KEY: "k" }, fake([{ status: 200, body: { choices: [{ message: { content: four } }] } }]));
+  assert.equal(JSON.parse(String(calls[0].init.body)).messages[0].content, "Write captions.\n\nRespond with JSON.");
 
   const denied = await runCaptions(input, { OPENAI_API_KEY: "k" }, fake([{ status: 401, body: { error: { message: "Incorrect API key" } } }]));
   assert.equal(denied.ok, false); assert.match(denied.error!, /HTTP 401: Incorrect API key/);
