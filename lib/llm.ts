@@ -80,7 +80,7 @@ async function callOpenAIOnce(input: RunInput, key: string, fetcher: Fetch, asJs
   const body: Record<string, unknown> = {
     model: input.model,
     messages: [
-      { role: "system", content: input.systemPrompt },
+      { role: "system", content: asJson && !input.schema && !/json/i.test(`${input.systemPrompt}\n${input.userPrompt}`) ? `${input.systemPrompt.trimEnd()}\n\nRespond with JSON.` : input.systemPrompt },
       { role: "user", content: [{ type: "text", text: input.userPrompt }, ...(input.image ? [{ type: "image_url", image_url: { url: `data:${input.image.mime};base64,${input.image.base64}` } }] : [])] },
     ],
   };
